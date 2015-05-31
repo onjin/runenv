@@ -2,7 +2,7 @@
 
 __author__ = 'Marek Wywiał'
 __email__ = 'onjinx@gmail.com'
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 import sys
 import subprocess
@@ -19,7 +19,7 @@ def run(*args):
     environ = create_env(args[0])
 
     return subprocess.check_call(
-        *args[1:], env=environ
+        args[1:], env=environ
     )
 
 
