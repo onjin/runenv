@@ -2,7 +2,7 @@
 
 __author__ = 'Marek Wywiał'
 __email__ = 'onjinx@gmail.com'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 import sys
 import subprocess
@@ -30,6 +30,11 @@ def create_env(env_file):
     environ = os.environ
     with open(env_file, 'r') as f:
         for line in f.readlines():
+            line = line.rstrip(os.linesep)
+            if '=' not in line:
+                continue
+            if line.startswith('#'):
+                continue
             key, value = line.split('=', 1)
             environ[key] = value
     return environ
