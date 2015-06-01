@@ -17,30 +17,27 @@ Wrapper to run programs with different env
 Installation
 ------------
 
-```shell
-$ pip install -U runenv
-```
+In order to install use `pip`::
+
+    $ pip install -U runenv
 
 Usage
 -----
 
-```shell
-$ runenv env.development ./manage.py runserver
-```
+Run from shell::
 
-example `env.development` file:
+    $ runenv env.development ./manage.py runserver
 
-```shell
-BASE_URL=http://127.0.0.1:8000
-DATABASE_URI=postgres://postgres:password@localhost/dbname
-SECRET_KEY=y7W8pbRcuPuAmgTHsJtEpKocb7XPcV0u
+example `env.development` file::
 
-# email settings
-EMAIL_HOST=smtp.mandrillapp.com
-EMAIL_PORT=587
-EMAIL_HOST_USER=someuser
-EMAIL_HOST_PASSWORD=hardpassword
-EMAIL_FROM=dev@local.host
-EMAIL_USE_TLS=1
+    BASE_URL=http://127.0.0.1:8000
+    DATABASE_URI=postgres://postgres:password@localhost/dbname
+    SECRET_KEY=y7W8pbRcuPuAmgTHsJtEpKocb7XPcV0u
 
-```
+    # email settings
+    EMAIL_HOST=smtp.mandrillapp.com
+    EMAIL_PORT=587
+    EMAIL_HOST_USER=someuser
+    EMAIL_HOST_PASSWORD=hardpassword
+    EMAIL_FROM=dev@local.host
+    EMAIL_USE_TLS=1
