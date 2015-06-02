@@ -10,6 +10,8 @@ import os
 
 
 def run(*args):
+    """Create given `envfile` and run `command` with `params`"""
+
     if not args:
         args = sys.argv[1:]
 
@@ -27,6 +29,9 @@ def run(*args):
 
 
 def create_env(env_file):
+    """Create environ dictionary from current os.environ and
+    variables got from given `env_file`"""
+
     environ = os.environ
     with open(env_file, 'r') as f:
         for line in f.readlines():

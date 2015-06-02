@@ -12,16 +12,16 @@ import unittest
 import os
 
 from . import TESTS_DIR
-from runenv import create_env
+from runenv import run, create_env
 
 
 class TestRunenv(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.env_file = os.path.join(TESTS_DIR, 'env.test')
 
     def test_create_env(self):
-        environ = create_env(os.path.join(TESTS_DIR, 'env.test'))
+        environ = create_env(self.env_file)
         self.assertEqual(environ.get('STRING'), 'some string with spaces')
         self.assertEqual(environ.get('NUMBER'), '12')
         self.assertEqual(environ.get('FLOAT'), '11.11')
@@ -30,8 +30,9 @@ class TestRunenv(unittest.TestCase):
         self.assertFalse('COMMENTED' in environ)
         self.assertFalse('# COMMENTED' in environ)
 
-    def tearDown(self):
-        pass
+    def test_run(self):
+        self.assertEqual(run(self.env_file, '/bin/true'), 0)
+        self.assertEqual(run(self.env_file, '/bin/false'), 1)
 
 if __name__ == '__main__':
     unittest.main()
