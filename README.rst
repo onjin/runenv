@@ -9,7 +9,14 @@ runenv
         :target: https://pypi.python.org/pypi/runenv
 
 
-Wrapper to run programs with different env
+Wrapper to run programs with modified environment variables loaded from given file. You can use *runenv* to manage your
+app settings using 12-factor_ principles.
+
+You can use same environment file with **runenv** and with **docker** using `env-file`_ parameter
+
+.. _env-file: https://docs.docker.com/reference/commandline/cli/
+.. _12-factor: http://12factor.net/
+
 
 * Free software: BSD license
 * Documentation: https://runenv.readthedocs.org.
@@ -41,3 +48,9 @@ example `env.development` file::
     EMAIL_HOST_PASSWORD=hardpassword
     EMAIL_FROM=dev@local.host
     EMAIL_USE_TLS=1
+
+Similar projects
+----------------
+
+* https://github.com/jezdez/envdir - runs another program with a modified environment according to files in a specified directory
+* https://github.com/theskumar/python-dotenv - Reads the key,value pair from .env and adds them to environment variable
