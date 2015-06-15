@@ -24,10 +24,10 @@ def run(*args):
 
     try:
         if not os.path.isfile(runnable_path):
-            print('File `{}` does not exist'.format(runnable_path))
+            print('File `%s does not exist' % runnable_path)
             sys.exit(1)
         if not(stat.S_IXUSR & os.stat(runnable_path)[stat.ST_MODE]):
-            print('File `{}` is not executable'.format(runnable_path))
+            print('File `%s is not executable' % runnable_path)
             sys.exit(1)
         return subprocess.check_call(
             args[1:], env=environ
