@@ -35,8 +35,9 @@ class TestRunenv(unittest.TestCase):
         self.assertEqual(run(self.env_file, '/bin/false'), 1)
 
     def test_invalid_file(self):
-        with self.assertRaises(SystemExit):
-            run(self.env_file, './missing')
+        self.assertRaises(
+            SystemExit, run, self.env_file, './missing'
+        )
 
 if __name__ == '__main__':
     unittest.main()

@@ -11,7 +11,7 @@ import stat
 
 
 def run(*args):
-    """Create given `envfile` and run `command` with `params`"""
+    """Load given `envfile` and run `command` with `params`"""
 
     if not args:
         args = sys.argv[1:]
