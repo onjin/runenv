@@ -61,7 +61,7 @@ example `env.development` file::
 Python API
 ----------
 
-.. function:: load_env(env_file='.env', prefix=None, strip_prefix=True, force=False)
+**load_env(env_file='.env', prefix=None, strip_prefix=True, force=False)**
 
 Loads environment from given ``env_file```, default `.env`.
 
@@ -70,13 +70,9 @@ If ``prefix`` provided only variables started with given prefix will be loaded t
 
 Example::
 
-
-.. code-block:: bash
-
     $ echo 'DJANGO_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
 
-.. code-block:: python
-
+    $ python
     >>> import os
     >>> from runenv import load_env
     >>> load_env(prefix='DJANGO_')
@@ -95,12 +91,9 @@ Wrapper ``runenv`` sets ``_RUNENV_WRAPPED=1`` variable and ``load_env`` does not
 
 Example::
 
-.. code-block:: bash
-
     $ echo 'DJANGO_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
 
-.. code-block:: python
-
+    $ python
     >>> import os
     >>> from runenv import load_env
     >>> os.environ['_RUNENV_WRAPPED'] = '1'
@@ -116,9 +109,6 @@ Django integration
 ------------------
 
 To use ``load_env`` with `Django`_, put in ``manage.py`` and ``wsgi.py`` code::
-
-
-.. code-block:: python
 
     from runenv import load_env
     load_env()
