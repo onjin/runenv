@@ -24,7 +24,7 @@ test_requirements = [
 
 setup(
     name='runenv',
-    version='0.1.4',
+    version='0.2.0',
     description="Wrapper to run programs with different env",
     long_description=readme + '\n\n' + history,
     author="Marek Wywiał",

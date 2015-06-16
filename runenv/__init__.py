@@ -2,7 +2,7 @@
 
 __author__ = 'Marek Wywiał'
 __email__ = 'onjinx@gmail.com'
-__version__ = '0.1.4'
+__version__ = '0.2.0'
 
 import sys
 import subprocess
@@ -19,7 +19,8 @@ def run(*args):
     if len(args) < 2:
         print('Usage: runenv <envfile> <command> <params>')
         sys.exit(0)
-    environ = create_env(args[0])
+    os.environ.update(create_env(args[0]))
+    os.environ['_RUNENV_WRAPPED'] = '1'
     runnable_path = args[1]
 
     try:
@@ -30,7 +31,7 @@ def run(*args):
             print('File `%s is not executable' % runnable_path)
             sys.exit(1)
         return subprocess.check_call(
-            args[1:], env=environ
+            args[1:], env=os.environ
         )
     except subprocess.CalledProcessError as e:
         return e.returncode
@@ -40,7 +41,7 @@ def create_env(env_file):
     """Create environ dictionary from current os.environ and
     variables got from given `env_file`"""
 
-    environ = os.environ
+    environ = {}
     with open(env_file, 'r') as f:
         for line in f.readlines():
             line = line.rstrip(os.linesep)
@@ -51,3 +52,12 @@ def create_env(env_file):
             key, value = line.split('=', 1)
             environ[key] = value
     return environ
+
+
+def load_env(env_file='.env', prefix=None, force=False):
+    if '_RUNENV_WRAPPED' in os.environ and not force:
+        return
+    for k, v in create_env(env_file).items():
+        if prefix and not k.startswith(prefix):
+            continue
+        os.environ[k] = v
