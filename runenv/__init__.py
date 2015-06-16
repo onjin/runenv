@@ -2,7 +2,7 @@
 
 __author__ = 'Marek Wywiał'
 __email__ = 'onjinx@gmail.com'
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 import sys
 import subprocess
@@ -54,10 +54,13 @@ def create_env(env_file):
     return environ
 
 
-def load_env(env_file='.env', prefix=None, force=False):
+def load_env(env_file='.env', prefix=None, strip_prefix=True, force=False):
     if '_RUNENV_WRAPPED' in os.environ and not force:
         return
     for k, v in create_env(env_file).items():
         if prefix and not k.startswith(prefix):
             continue
-        os.environ[k] = v
+        if prefix and strip_prefix:
+            os.environ[k[len(prefix):]] = v
+        else:
+            os.environ[k] = v

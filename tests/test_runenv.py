@@ -79,10 +79,23 @@ class TestRunenv(unittest.TestCase):
 
         load_env(env_file='env.custom', prefix='RUNENVC_S')
 
+        self.assertTrue('TRING' in os.environ)
+        self.assertFalse('RUNENVC_STRING' in os.environ)
+        self.assertFalse('RUNENVC_NUMBER' in os.environ)
+        self.assertFalse('RUNENVC_FLOAT' in os.environ)
+
+    def test_load_env_only_prefixed_variables_without_strip_prefix(self):
+        os.chdir(os.path.join(TESTS_DIR, 'cwd'))
+
+        self.assertFalse('RUNENVC_STRING' in os.environ)
+        self.assertFalse('RUNENVC_NUMBER' in os.environ)
+        self.assertFalse('RUNENVC_FLOAT' in os.environ)
+
+        load_env(env_file='env.custom', prefix='RUNENVC_S', strip_prefix=False)
+
         self.assertTrue('RUNENVC_STRING' in os.environ)
         self.assertFalse('RUNENVC_NUMBER' in os.environ)
         self.assertFalse('RUNENVC_FLOAT' in os.environ)
-        self.assertEqual(os.environ.get('RUNENVC_STRING'), 'custom string')
 
     def test_load_env_from_custom_file(self):
         os.chdir(os.path.join(TESTS_DIR, 'cwd'))

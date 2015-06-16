@@ -27,6 +27,7 @@ You can use same environment file with **runenv** and with **docker** using `env
 * Free software: BSD license
 * Documentation: https://runenv.readthedocs.org.
 
+------------
 Installation
 ------------
 
@@ -34,6 +35,7 @@ In order to install use `pip`::
 
     $ pip install -U runenv
 
+-----
 Usage
 -----
 
@@ -54,6 +56,78 @@ example `env.development` file::
     EMAIL_HOST_PASSWORD=hardpassword
     EMAIL_FROM=dev@local.host
     EMAIL_USE_TLS=1
+
+----------
+Python API
+----------
+
+.. function:: load_env(env_file='.env', prefix=None, strip_prefix=True, force=False)
+
+Loads environment from given ``env_file```, default `.env`.
+
+If ``prefix`` provided only variables started with given prefix will be loaded to environment with keys truncated from
+``prefix``. To preserver prefix, pass ``strip_prefix=False``.
+
+Example::
+
+
+.. code-block:: bash
+
+    $ echo 'DJANGO_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
+
+.. code-block:: python
+
+    >>> import os
+    >>> from runenv import load_env
+    >>> load_env(prefix='DJANGO_')
+    >>> 'DJANGO_SECRET_KEY' in os.environ
+    False
+    >>> 'SECRET_KEY' in os.environ
+    True
+    >>> load_env(prefix='DJANGO_', strip_prefix=False)
+    >>> 'DJANGO_SECRET_KEY' in os.environ
+    True
+
+
+**Notice**: Environment will not be loaded if command was fired by `runenv` wrapper until you use **force=True** parameter
+
+Wrapper ``runenv`` sets ``_RUNENV_WRAPPED=1`` variable and ``load_env`` does not load variables then.
+
+Example::
+
+.. code-block:: bash
+
+    $ echo 'DJANGO_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
+
+.. code-block:: python
+
+    >>> import os
+    >>> from runenv import load_env
+    >>> os.environ['_RUNENV_WRAPPED'] = '1'
+    >>> load_env()
+    >>> 'DJANGO_SECRET_KEY' in os.environ
+    False
+    >>> load_env(force=True)
+    >>> 'DJANGO_SECRET_KEY' in os.environ
+    True
+
+
+Django integration
+------------------
+
+To use ``load_env`` with `Django`_, put in ``manage.py`` and ``wsgi.py`` code::
+
+
+.. code-block:: python
+
+    from runenv import load_env
+    load_env()
+
+
+.. _django: http://djangoproject.com/
+
+
+
 
 Similar projects
 ----------------
