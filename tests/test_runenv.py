@@ -12,7 +12,10 @@ import os
 import sys
 from contextlib import contextmanager
 import unittest
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from . import TESTS_DIR
 from runenv import run, create_env, load_env

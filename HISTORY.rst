@@ -3,6 +3,10 @@
 History
 -------
 
+0.2.2 (2015-06-16)
+---------------------
+* fix compatibility with python3
+
 0.2.1 (2015-06-16)
 ---------------------
 * add `strip_prefix` option to `load_env`
