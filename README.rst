@@ -85,7 +85,7 @@ Example::
     True
 
 
-**Notice**: Environment will not be loaded if command was fired by `runenv` wrapper until you use **force=True** parameter
+**Notice**: Environment will be not loaded if command was fired by `runenv` wrapper unless you use **force=True** parameter
 
 Wrapper ``runenv`` sets ``_RUNENV_WRAPPED=1`` variable and ``load_env`` does not load variables then.
 
