@@ -34,7 +34,17 @@ class TestRunenv(unittest.TestCase):
 
     def setUp(self):
         self.env_file = os.path.join(TESTS_DIR, 'env.test')
-        os.environ.clear()
+
+    def tearDown(self):
+        vars = (
+            'STRING', 'NUMBER', 'FLOAT', 'EMPTY', 'SPACED', 'COMMENTED',
+            'RUNENV_STRING', 'RUNENV_NUMBER', 'RUNENV_FLOAT',
+            'RUNENVC_STRING', 'RUNENVC_NUMBER', 'RUNENVC_FLOAT',
+            '_RUNENV_WRAPPED',
+        )
+        for k in vars:
+            if k in os.environ:
+                del os.environ[k]
 
     def test_create_env(self):
         environ = create_env(self.env_file)
@@ -56,6 +66,11 @@ class TestRunenv(unittest.TestCase):
         self.assertRaises(
             SystemExit, run, self.env_file, './missing'
         )
+    def test_run_from_path(self):
+        self.assertEqual(run(self.env_file, 'true'), 0)
+        self.assertEqual(run(self.env_file, 'false'), 1)
+        with capture(run, self.env_file, 'env') as output:
+            self.assertTrue('_RUNENV_WRAPPED', output)
 
     def test_load_env_from_default_file(self):
         os.chdir(os.path.join(TESTS_DIR, 'cwd'))

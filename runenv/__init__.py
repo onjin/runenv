@@ -2,12 +2,13 @@
 
 __author__ = 'Marek Wywiał'
 __email__ = 'onjinx@gmail.com'
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 
 import sys
 import subprocess
 import os
 import stat
+from distutils import spawn
 
 
 def run(*args):
@@ -23,9 +24,12 @@ def run(*args):
     os.environ['_RUNENV_WRAPPED'] = '1'
     runnable_path = args[1]
 
+    if not runnable_path.startswith(('/', '.')):
+        runnable_path = spawn.find_executable(runnable_path)
+
     try:
         if not os.path.isfile(runnable_path):
-            print('File `%s does not exist' % runnable_path)
+            print('File `%s` does not exist' % runnable_path)
             sys.exit(1)
         if not(stat.S_IXUSR & os.stat(runnable_path)[stat.ST_MODE]):
             print('File `%s is not executable' % runnable_path)
