@@ -165,5 +165,8 @@ class TestRunenv(unittest.TestCase):
         self.assertEqual(os.environ.get('RUNENVC_NUMBER'), '14')
         self.assertEqual(os.environ.get('RUNENVC_FLOAT'), '14.14')
 
+    def test_load_env_from_missing_file(self):
+        load_env(env_file='env.missing')
+
 if __name__ == '__main__':
     unittest.main()

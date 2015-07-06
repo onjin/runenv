@@ -3,6 +3,10 @@
 History
 -------
 
+0.2.4 (2015-07-06)
+---------------------
+* skip `load_env` if env file does not exists
+
 0.2.3 (2015-06-26)
 ---------------------
 * support to run programs from PATH
