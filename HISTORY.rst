@@ -3,6 +3,10 @@
 History
 -------
 
+0.2.5 (2015-11-30)
+---------------------
+* do not look for executable as absolute path
+
 0.2.4 (2015-07-06)
 ---------------------
 * skip `load_env` if env file does not exists

@@ -62,10 +62,6 @@ class TestRunenv(unittest.TestCase):
         with capture(run, self.env_file, '/usr/bin/env') as output:
             self.assertTrue('_RUNENV_WRAPPED', output)
 
-    def test_invalid_file(self):
-        self.assertRaises(
-            SystemExit, run, self.env_file, './missing'
-        )
     def test_run_from_path(self):
         self.assertEqual(run(self.env_file, 'true'), 0)
         self.assertEqual(run(self.env_file, 'false'), 1)

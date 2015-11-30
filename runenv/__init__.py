@@ -2,7 +2,7 @@
 
 __author__ = 'Marek Wywiał'
 __email__ = 'onjinx@gmail.com'
-__version__ = '0.2.4'
+__version__ = '0.2.5'
 
 import sys
 import subprocess
@@ -28,9 +28,6 @@ def run(*args):
         runnable_path = spawn.find_executable(runnable_path)
 
     try:
-        if not os.path.isfile(runnable_path):
-            print('File `%s` does not exist' % runnable_path)
-            sys.exit(1)
         if not(stat.S_IXUSR & os.stat(runnable_path)[stat.ST_MODE]):
             print('File `%s is not executable' % runnable_path)
             sys.exit(1)
