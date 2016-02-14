@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.0 (2016-02-14)
+------------------
+* change `Development Status` to `5 - Production/Stable`
+
 0.2.5 (2015-11-30)
 ---------------------
 * do not look for executable as absolute path

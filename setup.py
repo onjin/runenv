@@ -14,17 +14,13 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
-requirements = [
-    # TODO: put package requirements here
-]
+requirements = []
 
-test_requirements = [
-    # TODO: put package test requirements here
-]
+test_requirements = []
 
 setup(
     name='runenv',
-    version='0.2.5',
+    version='0.3.0',
     description="Wrapper to run programs with different env",
     long_description=readme + '\n\n' + history,
     author="Marek Wywiał",
@@ -45,7 +41,7 @@ setup(
     zip_safe=False,
     keywords='runenv',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
