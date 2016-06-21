@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.1 (2016-06-21)
+------------------
+* add support for quoted values
+
 0.3.0 (2016-02-14)
 ------------------
 * change `Development Status` to `5 - Production/Stable`

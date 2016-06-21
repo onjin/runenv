@@ -40,7 +40,7 @@ class TestRunenv(unittest.TestCase):
             'STRING', 'NUMBER', 'FLOAT', 'EMPTY', 'SPACED', 'COMMENTED',
             'RUNENV_STRING', 'RUNENV_NUMBER', 'RUNENV_FLOAT',
             'RUNENVC_STRING', 'RUNENVC_NUMBER', 'RUNENVC_FLOAT',
-            '_RUNENV_WRAPPED',
+            '_RUNENV_WRAPPED', 'SINGLE_QUOTE', 'DOUBLE_QUOTE',
         )
         for k in vars:
             if k in os.environ:
@@ -53,6 +53,8 @@ class TestRunenv(unittest.TestCase):
         self.assertEqual(environ.get('FLOAT'), '11.11')
         self.assertEqual(environ.get('EMPTY'), '')
         self.assertEqual(environ.get(' SPACED '), '  spaced')
+        self.assertEqual(environ.get('SINGLE_QUOTE'), 'so"me')
+        self.assertEqual(environ.get('DOUBLE_QUOTE'), "so'me")
         self.assertFalse('COMMENTED' in environ)
         self.assertFalse('# COMMENTED' in environ)
 

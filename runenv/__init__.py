@@ -2,7 +2,7 @@
 
 __author__ = 'Marek Wywiał'
 __email__ = 'onjinx@gmail.com'
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 import sys
 import subprocess
@@ -38,6 +38,14 @@ def run(*args):
         return e.returncode
 
 
+def parse_value(value):
+    if value.startswith('"') and value.endswith('"'):
+        value = value[1:-1]
+    elif value.startswith("'") and value.endswith("'"):
+        value = value[1:-1]
+    return value
+
+
 def create_env(env_file):
     """Create environ dictionary from current os.environ and
     variables got from given `env_file`"""
@@ -51,7 +59,7 @@ def create_env(env_file):
             if line.startswith('#'):
                 continue
             key, value = line.split('=', 1)
-            environ[key] = value
+            environ[key] = parse_value(value)
     return environ
 
 
