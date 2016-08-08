@@ -33,23 +33,25 @@ Features
 
 CLI:
 
-* CLI tool to load environment variables from given file
+* command-line tool to load environment variables from given file
 
 Python API:
 
-* load variables from `.env` or given file
+* load variables from a file (`.env` or passed filename)
 * load only variables with given `prefix`
-* `prefix` can be stripped during loading
+* `prefix` can be stripped during load
 * detect whether environment was loaded by `runenv` CLI
-* force load even `runenv` CLI was used
-* `search_parent` path to given level for `env_file`
+* force load even if `runenv` CLI was used
+* `search_parent` option which allows to look for `env_file` in parent dirs
 
 
 ------------
 Installation
 ------------
 
-In order to install use `pip`::
+In order to install use `pip`
+
+.. code-block:: console
 
     $ pip install -U runenv
 
@@ -57,11 +59,16 @@ In order to install use `pip`::
 Usage
 -----
 
-Run from shell::
+Run from shell
+
+.. code-block:: console
 
     $ runenv env.development ./manage.py runserver
 
-example `env.development` file::
+example `env.development` file
+
+.. code-block:: python
+
 
     BASE_URL=http://127.0.0.1:8000
     DATABASE_URI=postgres://postgres:password@localhost/dbname
@@ -81,27 +88,35 @@ Python API
 
 **load_env(env_file='.env', prefix=None, strip_prefix=True, force=False, search_parent=0)**
 
-Loads environment from given ``env_file```, default `.env`.
+Loads environment from given ``env_file``` (default `.env`).
 
 
 Options:
 
- * env_file - relative or absolute path to file with environment variables;
-   default `.env`
- * prefix - prefix to match variables f.i. `APP_`
- * strip_prefix - whether to strip `prefix` during environment loading or not;
-   default `True`
- * force - load env_file, event `runenv` CLI command was used; default `False`
- * search_parent - search env file in parent directories till given level;
-   default `0`
++--------------+---------+--------------------------------------------------------------------------------+
+| option       | default | description                                                                    |
++==============+=========+================================================================================+
+| env_file     | `.env`  | relative or absolute path to file with environment variables                   |
++--------------+---------+--------------------------------------------------------------------------------+
+| prefix       | `None`  | prefix to match variables e.g. `APP_`                                          |
++--------------+---------+--------------------------------------------------------------------------------+
+| strip_prefix | `True`  | should the prefix be stripped during loa                                       |
++--------------+---------+--------------------------------------------------------------------------------+
+| force        | `False` | load env_file, even though `runenv` CLI command was used                       |
++--------------+---------+--------------------------------------------------------------------------------+
+| search_parent| `0`     | To what level traverse parents in search of file                               |
++--------------+---------+--------------------------------------------------------------------------------+
+
+If ``prefix`` option is provided only variables starting with it will be loaded to environment, with their keys stripped of that prefix. To preserve prefix, you can set ``strip_prefix`` to ``False``.
 
 
-If ``prefix`` provided only variables started with given prefix will be loaded to environment with keys truncated from
-``prefix``. To preserver prefix, pass ``strip_prefix=False``.
+Example
 
-Example::
+.. code-block:: console
 
     $ echo 'DJANGO_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
+
+.. code-block:: python
 
     $ python
     >>> import os
@@ -116,13 +131,17 @@ Example::
     True
 
 
-**Notice**: Environment will be not loaded if command was fired by `runenv` wrapper unless you use **force=True** parameter
+**Notice**: Environment will not be loaded if command was fired by `runenv` wrapper, unless you set the **force** parameter to **True**
 
-Wrapper ``runenv`` sets ``_RUNENV_WRAPPED=1`` variable and ``load_env`` does not load variables then.
+``load_env`` does not load variables when wrapper ``runenv`` is used. Also ``_RUNENV_WRAPPED`` is set to ``1``
 
-Example::
+Example
+
+.. code-block:: console
 
     $ echo 'DJANGO_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
+
+.. code-block:: python
 
     $ python
     >>> import os
@@ -139,7 +158,10 @@ Example::
 Django integration
 ------------------
 
-To use ``load_env`` with `Django`_, put in ``manage.py`` and ``wsgi.py`` code::
+To use ``load_env`` with `Django`_, put the followin in ``manage.py`` and ``wsgi.py``
+
+.. code-block:: python
+
 
     from runenv import load_env
     load_env()
