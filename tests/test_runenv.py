@@ -166,5 +166,41 @@ class TestRunenv(unittest.TestCase):
     def test_load_env_from_missing_file(self):
         load_env(env_file='env.missing')
 
+    def test_search_parent(self):
+        ENV_FILE = 'env.search_parent'
+        os.chdir(os.path.join(TESTS_DIR, 'search_parent', 'project'))
+
+        load_env(env_file=ENV_FILE)
+        self.assertFalse('PARENT' in os.environ)
+
+        load_env(env_file=ENV_FILE)
+        self.assertFalse('PARENT' in os.environ)
+
+        load_env(env_file=ENV_FILE, search_parent=1)
+        self.assertTrue('PARENT' in os.environ)
+        self.assertEqual(os.environ.get('PARENT'), '2')
+
+        load_env(env_file=ENV_FILE, search_parent=2)
+        self.assertTrue('PARENT' in os.environ)
+        self.assertEqual(os.environ.get('PARENT'), '2')
+
+    def test_search_grand_parent(self):
+        ENV_FILE = 'env.search_grandparent'
+        os.chdir(os.path.join(TESTS_DIR, 'search_grandparent', 'project'))
+
+        load_env(env_file=ENV_FILE)
+        self.assertFalse('GRAND_PARENT' in os.environ)
+
+        load_env(env_file=ENV_FILE)
+        self.assertFalse('GRAND_PARENT' in os.environ)
+
+        load_env(env_file=ENV_FILE, search_parent=1)
+        self.assertFalse('GRAND_PARENT' in os.environ)
+
+        load_env(env_file=ENV_FILE, search_parent=2)
+        self.assertTrue('GRAND_PARENT' in os.environ)
+        self.assertEqual(os.environ.get('GRAND_PARENT'), '3')
+
+
 if __name__ == '__main__':
     unittest.main()

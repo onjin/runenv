@@ -27,6 +27,24 @@ You can use same environment file with **runenv** and with **docker** using `env
 * Free software: BSD license
 * Documentation: https://runenv.readthedocs.org.
 
+--------
+Features
+--------
+
+CLI:
+
+* CLI tool to load environment variables from given file
+
+Python API:
+
+* load variables from `.env` or given file
+* load only variables with given `prefix`
+* `prefix` can be stripped during loading
+* detect whether environment was loaded by `runenv` CLI
+* force load even `runenv` CLI was used
+* `search_parent` path to given level for `env_file`
+
+
 ------------
 Installation
 ------------
@@ -61,9 +79,22 @@ example `env.development` file::
 Python API
 ----------
 
-**load_env(env_file='.env', prefix=None, strip_prefix=True, force=False)**
+**load_env(env_file='.env', prefix=None, strip_prefix=True, force=False, search_parent=0)**
 
 Loads environment from given ``env_file```, default `.env`.
+
+
+Options:
+
+ * env_file - relative or absolute path to file with environment variables;
+   default `.env`
+ * prefix - prefix to match variables f.i. `APP_`
+ * strip_prefix - whether to strip `prefix` during environment loading or not;
+   default `True`
+ * force - load env_file, event `runenv` CLI command was used; default `False`
+ * search_parent - search env file in parent directories till given level;
+   default `0`
+
 
 If ``prefix`` provided only variables started with given prefix will be loaded to environment with keys truncated from
 ``prefix``. To preserver prefix, pass ``strip_prefix=False``.

@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
+from distutils import spawn
+import logging
+import os
+import stat
+import subprocess
+import sys
 
 __author__ = 'Marek Wywiał'
 __email__ = 'onjinx@gmail.com'
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 
-import sys
-import subprocess
-import os
-import stat
-from distutils import spawn
+
+logger = logging.getLogger('runenv')
 
 
 def run(*args):
@@ -63,11 +66,28 @@ def create_env(env_file):
     return environ
 
 
-def load_env(env_file='.env', prefix=None, strip_prefix=True, force=False):
+def load_env(
+        env_file='.env', prefix=None, strip_prefix=True, force=False,
+        search_parent=0
+):
+    # we need absolute path to support `search_parent`
+    env_file = os.path.abspath(env_file)
+    logger.info('trying env file {0}'.format(env_file))
+
     if '_RUNENV_WRAPPED' in os.environ and not force:
         return
     if not os.path.exists(env_file):
-        return
+        if not search_parent:
+            return
+        else:
+            env_file = os.path.join(
+                os.path.dirname(os.path.dirname(env_file)),
+                os.path.basename(env_file)
+            )
+            return load_env(
+                env_file, prefix, strip_prefix, force, search_parent - 1
+            )
+
     for k, v in create_env(env_file).items():
         if prefix and not k.startswith(prefix):
             continue
@@ -75,3 +95,4 @@ def load_env(env_file='.env', prefix=None, strip_prefix=True, force=False):
             os.environ[k[len(prefix):]] = v
         else:
             os.environ[k] = v
+    logger.info('env file {0} loaded'.format(env_file))

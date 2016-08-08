@@ -3,6 +3,10 @@
 History
 -------
 
+0.4.0 (2016-08-08)
+------------------
+* add support for `search_parent` option
+
 0.3.1 (2016-06-21)
 ------------------
 * add support for quoted values
