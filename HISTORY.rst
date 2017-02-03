@@ -3,6 +3,10 @@
 History
 -------
 
+1.0.1 (2017-02-03)
+------------------
+* fix package description syntax
+
 1.0.0 (2017-02-03)
 ------------------
 * changed version to `1.0.0`
