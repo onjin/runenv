@@ -156,7 +156,7 @@ Example
 
 
 Django/Flask integration
-------------------
+------------------------
 
 To use ``load_env`` with `Django`_ or `Flask`_, put the followin in ``manage.py`` and ``wsgi.py``
 
