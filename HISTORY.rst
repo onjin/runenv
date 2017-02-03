@@ -3,6 +3,10 @@
 History
 -------
 
+1.0.0 (2017-02-03)
+------------------
+* changed version to `1.0.0`
+
 0.4.0 (2016-08-08)
 ------------------
 * add support for `search_parent` option

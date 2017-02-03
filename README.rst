@@ -114,20 +114,20 @@ Example
 
 .. code-block:: console
 
-    $ echo 'DJANGO_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
+    $ echo 'APP_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
 
 .. code-block:: python
 
     $ python
     >>> import os
     >>> from runenv import load_env
-    >>> load_env(prefix='DJANGO_')
-    >>> 'DJANGO_SECRET_KEY' in os.environ
+    >>> load_env(prefix='APP_')
+    >>> 'APP_SECRET_KEY' in os.environ
     False
     >>> 'SECRET_KEY' in os.environ
     True
-    >>> load_env(prefix='DJANGO_', strip_prefix=False)
-    >>> 'DJANGO_SECRET_KEY' in os.environ
+    >>> load_env(prefix='APP_', strip_prefix=False)
+    >>> 'APP_SECRET_KEY' in os.environ
     True
 
 
@@ -139,7 +139,7 @@ Example
 
 .. code-block:: console
 
-    $ echo 'DJANGO_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
+    $ echo 'APP_SECRET_KEY=bzemAG0xfdMgFrHBT3tJBbiYIoY6EeAj' > .env
 
 .. code-block:: python
 
@@ -148,17 +148,17 @@ Example
     >>> from runenv import load_env
     >>> os.environ['_RUNENV_WRAPPED'] = '1'
     >>> load_env()
-    >>> 'DJANGO_SECRET_KEY' in os.environ
+    >>> 'APP_SECRET_KEY' in os.environ
     False
     >>> load_env(force=True)
-    >>> 'DJANGO_SECRET_KEY' in os.environ
+    >>> 'APP_SECRET_KEY' in os.environ
     True
 
 
-Django integration
+Django/Flask integration
 ------------------
 
-To use ``load_env`` with `Django`_, put the followin in ``manage.py`` and ``wsgi.py``
+To use ``load_env`` with `Django`_ or `Flask`_, put the followin in ``manage.py`` and ``wsgi.py``
 
 .. code-block:: python
 
@@ -168,6 +168,7 @@ To use ``load_env`` with `Django`_, put the followin in ``manage.py`` and ``wsgi
 
 
 .. _django: http://djangoproject.com/
+.. _flask: http://flask.pocoo.org/
 
 
 

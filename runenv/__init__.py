@@ -8,7 +8,7 @@ import sys
 
 __author__ = 'Marek Wywiał'
 __email__ = 'onjinx@gmail.com'
-__version__ = '0.4.0'
+__version__ = '1.0.0'
 
 
 logger = logging.getLogger('runenv')
