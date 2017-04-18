@@ -2,6 +2,10 @@
 runenv
 ===============================
 
+.. image:: https://badges.gitter.im/onjin/runenv.svg
+   :alt: Join the chat at https://gitter.im/onjin/runenv
+   :target: https://gitter.im/onjin/runenv?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
 .. image:: https://img.shields.io/travis/onjin/runenv.svg
         :target: https://travis-ci.org/onjin/runenv
 
