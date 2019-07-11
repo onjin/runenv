@@ -1,3 +1,5 @@
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fonjin%2Frunenv.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fonjin%2Frunenv?ref=badge_shield)
+
 ===============================
 runenv
 ===============================
@@ -178,3 +180,6 @@ Similar projects
 
 * https://github.com/jezdez/envdir - runs another program with a modified environment according to files in a specified directory
 * https://github.com/theskumar/python-dotenv - Reads the key,value pair from .env and adds them to environment variable
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fonjin%2Frunenv.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fonjin%2Frunenv?ref=badge_large)
