@@ -1,7 +1,18 @@
 runenv
 ======
+.. image:: https://img.shields.io/travis/onjin/runenv.svg
+        :target: https://travis-ci.org/onjin/runenv
 
-|image| |image| |image| |image| |image|
+.. image:: https://img.shields.io/pypi/v/runenv.svg
+        :target: https://pypi.python.org/pypi/runenv
+
+.. image:: https://img.shields.io/badge/license-New%20BSD-blue.svg
+        :target: https://github.com/onjin/runenv/blob/master/LICENSE
+
+.. image:: https://img.shields.io/badge/python-2.7%20|%203.6%20|%203.7%20|%203.8%20|%203.9-blue
+
+.. image:: https://img.shields.io/pypi/dm/runenv.svg
+        :target: https://pypi.python.org/pypi/runenv
 
 Wrapper to run programs with modified environment variables loaded from
 given file. You can use *runenv* to manage your app settings using
