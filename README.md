@@ -1,6 +1,5 @@
----
-title: runenv
----
+runenv
+------
 
 [![image](https://img.shields.io/travis/onjin/runenv.svg)](https://travis-ci.org/onjin/runenv)
 [![image](https://img.shields.io/pypi/v/runenv.svg)](https://pypi.python.org/pypi/runenv)
