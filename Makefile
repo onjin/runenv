@@ -34,6 +34,9 @@ lint:
 test:
 	hatch test
 
+test-all:
+	hatch run test:cov
+
 release: clean
 	hatch build
 	hatch publish

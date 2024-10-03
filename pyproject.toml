@@ -37,17 +37,18 @@ Source = "https://github.com/onjin/runenv"
 [tool.hatch.version]
 path = "runenv/__about__.py"
 
-[tool.hatch.envs.default]
+[tool.hatch.envs.test]
 dependencies = [
+  "coverage[toml]",
   "pytest",
   "pytest-cov",
 ]
-[tool.hatch.envs.default.scripts]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=runenv --cov=tests {args}"
-no-cov = "cov --no-cov {args}"
+[tool.hatch.envs.test.scripts]
+cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=runenv --cov=tests'
 
-[[tool.hatch.envs.all.matrix]]
+[[tool.hatch.envs.test.matrix]]
 python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
 
 [tool.coverage.run]
 branch = true

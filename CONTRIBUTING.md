@@ -75,12 +75,12 @@ local development.
     Now you can make your changes locally.
 
 5.  When you\'re done making changes, check that your changes pass
-    flake8 and the tests, including testing other Python versions with
-    tox:
+    lint and the tests.
 
         $ pip install hatch
         $ make lint
-        $ make test
+        $ make test         # for python in your env
+        $ make test-all     # for all supported python versions
 
 6.  Commit your changes and push your branch to GitHub:
 
