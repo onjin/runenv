@@ -13,6 +13,8 @@ import sys
 import unittest
 from contextlib import contextmanager
 
+import pytest
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -73,6 +75,10 @@ class TestRunenv(unittest.TestCase):
         self.assertFalse("COMMENTED" in environ)
         self.assertFalse("# COMMENTED" in environ)
 
+    @pytest.mark.skipif(
+        "linux" not in sys.platform,
+        reason="works on linux",
+    )
     def test_run(self):
         self.assertEqual(run(self.env_file, "/bin/true"), 0)
         self.assertEqual(run(self.env_file, "/bin/false"), 1)
