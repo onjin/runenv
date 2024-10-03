@@ -120,7 +120,7 @@ def resolve_lazy_value(value: str, env_vars: Dict[str, str]) -> str:
 
 
 def create_env(
-    env_file: str,
+    env_file: str = ".env",
     prefix: Union[str, None] = None,
     strip_prefix: bool = True,  # noqa: FBT001,FBT002
 ) -> Dict[str, Union[str, str]]:
