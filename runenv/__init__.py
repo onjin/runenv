@@ -72,7 +72,7 @@ def run(argv: Optional[Sequence[str]] = None):
         help="Strip prefix given with --prefix from environment variables names",
     )
     _ = parser.add_argument(
-        "--dry_run",
+        "--dry-run",
         action="store_true",
         help="Return parsed .env instead of running command",
     )
