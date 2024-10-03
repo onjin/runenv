@@ -1,4 +1,4 @@
-.PHONY: clean-pyc clean-build docs clean
+.PHONY: clean-pyc clean-build clean
 
 help:
 	@echo "clean - remove all build, test, coverage and Python artifacts"
@@ -8,7 +8,6 @@ help:
 	@echo "test - run tests quickly with the default Python"
 	@echo "test-all - run tests on every Python version with tox"
 	@echo "coverage - check code coverage quickly with the default Python"
-	@echo "docs - generate Sphinx HTML documentation, including API docs"
 	@echo "release - package and upload a release"
 	@echo "dist - package"
 	@echo "install - install the package to the active Python's site-packages"
@@ -34,14 +33,6 @@ lint:
 
 test:
 	hatch test
-
-docs:
-	rm -f docs/runenv.rst
-	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ runenv
-	$(MAKE) -C docs clean
-	$(MAKE) -C docs html
-	open docs/_build/html/index.html
 
 release: clean
 	hatch build

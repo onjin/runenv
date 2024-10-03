@@ -46,3 +46,4 @@ docs/_build
 .venv
 .direnv
 __pycache__
+.envrc
