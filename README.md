@@ -18,9 +18,8 @@ The `runenv` package provides a few things:
 - [cli] Wrapper to run programs with modified environment variables loaded from given .env file.
 - [api] Python API to load variables from .env file into environment
 
-
--   Free software: MIT license
--   Documentation: <https://runenv.readthedocs.org>.
+License: Free software: MIT license
+Changes: [CHANGELOG.md](CHANGELOG.md)
 
 **Table of Contents**
 
