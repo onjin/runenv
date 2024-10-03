@@ -4,10 +4,10 @@
 import logging
 import os
 import re
+import shutil
 import stat
 import subprocess
 import sys
-from distutils import spawn
 
 logger = logging.getLogger("runenv")
 
@@ -26,7 +26,7 @@ def run(*args):
     runnable_path = args[1]
 
     if not runnable_path.startswith(("/", ".")):
-        runnable_path = spawn.find_executable(runnable_path)
+        runnable_path = shutil.which(runnable_path)
 
     try:
         if not (stat.S_IXUSR & os.stat(runnable_path)[stat.ST_MODE]):
