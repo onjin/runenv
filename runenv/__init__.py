@@ -18,8 +18,8 @@ def run(*args):
     if not args:
         args = sys.argv[1:]
 
-    if len(args) < 2:
-        print("Usage: runenv <envfile> <command> <params>")
+    if len(args) < 2:  # noqa
+        sys.stdout.write("Usage: runenv <envfile> <command> <params>\n")
         sys.exit(0)
     os.environ.update(create_env(args[0]))
     os.environ["_RUNENV_WRAPPED"] = "1"
@@ -30,9 +30,9 @@ def run(*args):
 
     try:
         if not (stat.S_IXUSR & os.stat(runnable_path)[stat.ST_MODE]):
-            print("File `%s is not executable" % runnable_path)
+            sys.stdout.write("File `%s is not executable\n" % runnable_path)
             sys.exit(1)
-        return subprocess.check_call(args[1:], env=os.environ)
+        return subprocess.check_call(args[1:], env=os.environ)  # noqa
     except subprocess.CalledProcessError as e:
         return e.returncode
 
@@ -77,7 +77,7 @@ def create_env(env_file):
     return environ
 
 
-def load_env(env_file=".env", prefix=None, strip_prefix=True, force=False, search_parent=0):
+def load_env(env_file=".env", prefix=None, strip_prefix=True, force=False, search_parent=0):  # noqa: FBT002
     # we need absolute path to support `search_parent`
     env_file = os.path.abspath(env_file)
     logger.info("trying env file {0}".format(env_file))
