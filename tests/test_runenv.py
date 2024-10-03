@@ -12,13 +12,9 @@ import os
 import sys
 import unittest
 from contextlib import contextmanager
+from io import StringIO
 
 import pytest
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 from runenv import create_env, load_env, run
 
@@ -41,6 +37,7 @@ class TestRunenv(unittest.TestCase):
 
     def tearDown(self):
         variables = (
+            "VARIABLED",
             "STRING",
             "NUMBER",
             "FLOAT",
@@ -64,6 +61,7 @@ class TestRunenv(unittest.TestCase):
 
     def test_create_env(self):
         environ = create_env(self.env_file)
+        self.assertEqual(environ.get("VARIABLED"), "some_lazy_variable_12")
         self.assertEqual(environ.get("STRING"), "some string with spaces")
         self.assertEqual(environ.get("NUMBER"), "12")
         self.assertEqual(environ.get("FLOAT"), "11.11")
@@ -80,15 +78,15 @@ class TestRunenv(unittest.TestCase):
         reason="works on linux",
     )
     def test_run(self):
-        self.assertEqual(run(self.env_file, "/bin/true"), 0)
-        self.assertEqual(run(self.env_file, "/bin/false"), 1)
-        with capture(run, self.env_file, "/usr/bin/env") as output:
+        self.assertEqual(run([self.env_file, "/bin/true"]), 0)
+        self.assertEqual(run([self.env_file, "/bin/false"]), 1)
+        with capture(run, [self.env_file, "/usr/bin/env"]) as output:
             self.assertTrue("_RUNENV_WRAPPED", output)
 
     def test_run_from_path(self):
-        self.assertEqual(run(self.env_file, "true"), 0)
-        self.assertEqual(run(self.env_file, "false"), 1)
-        with capture(run, self.env_file, "env") as output:
+        self.assertEqual(run([self.env_file, "true"]), 0)
+        self.assertEqual(run([self.env_file, "false"]), 1)
+        with capture(run, [self.env_file, "env"]) as output:
             self.assertTrue("_RUNENV_WRAPPED", output)
 
     def test_load_env_from_default_file(self):
