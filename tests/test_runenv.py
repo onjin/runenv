@@ -31,7 +31,6 @@ def capture(command, *args, **kwargs):
 
 
 class TestRunenv(unittest.TestCase):
-
     def setUp(self):
         self.env_file = os.path.join(TESTS_DIR, "env.test")
 
