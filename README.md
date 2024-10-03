@@ -7,7 +7,7 @@
 | CI/CD   | [![CI - Test](https://github.com/onjin/runenv/actions/workflows/test.yml/badge.svg)](https://github.com/onjin/runenv/actions/workflows/test.yml)                                                                                                                                                                                                                                                                                                                                       |
 | Package | [![PyPI - Version](https://img.shields.io/pypi/v/runenv.svg?logo=pypi&label=PyPI&logoColor=gold)](https://pypi.org/project/runenv/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/runenv.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold)](https://pypi.org/project/runenv/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/runenv.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/runenv/)                 |
 | Meta    | [![linting - Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![code style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy) [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) |
-
+| Changes   | [CHANGELOG.md](CHANGELOG.md) |
 </div>
 
 ---
@@ -18,8 +18,7 @@ The `runenv` package provides a few things:
 - [cli] Wrapper to run programs with modified environment variables loaded from given .env file.
 - [api] Python API to load variables from .env file into environment
 
-License: Free software: MIT license
-Changes: [CHANGELOG.md](CHANGELOG.md)
+
 
 **Table of Contents**
 
