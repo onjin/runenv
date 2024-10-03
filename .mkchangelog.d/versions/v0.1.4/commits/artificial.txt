@@ -1,0 +1,1 @@
+feat: check whether executable exists before run it

@@ -1,0 +1,1 @@
+feat: add support for `search_parent` option to find .env files in parent directories

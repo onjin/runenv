@@ -1,0 +1,39 @@
+[GENERAL]
+; config for https://pypi.org/project/mkchangelog/
+output = CHANGELOG.md
+template = markdown
+commit_limit = 100
+unreleased = True
+unreleased_version = Unreleased
+hide_empty_releases = False
+changelog_title = Changelog
+commit_types_list = all
+commit_type_default_priority = 10
+tag_prefix = v
+raise_exceptions = False
+
+[commit_types]
+build = Build
+chore = Chore
+ci = CI
+dev = Dev
+docs = Docs
+feat = Features
+fix = Fixes
+perf = Performance
+refactor = Refactors
+style = Style
+test = Test
+translations = Translations
+
+[commit_types_priorities]
+feat = 40
+fix = 30
+refactor = 20
+
+[reference_aliases]
+closes = ['Close', 'Closed']
+fixes = ['Fix', 'Fixed']
+resolves = ['Resolve', 'Resolved']
+relates = ['Relate', 'Related']
+

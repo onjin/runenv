@@ -1,0 +1,1 @@
+feat: skip `load_env` if env file does not exists without failing
