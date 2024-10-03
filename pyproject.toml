@@ -15,6 +15,7 @@ authors = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
+  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -47,7 +48,7 @@ dependencies = [
 cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=runenv --cov=tests'
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
 
 
 [tool.coverage.run]
