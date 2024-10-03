@@ -9,7 +9,7 @@ import shutil
 import stat
 import subprocess
 import sys
-from typing import Dict, Optional, Sequence, Tuple, Union
+from typing import Dict, Optional, Sequence, Union
 
 from runenv.__about__ import __version__
 
