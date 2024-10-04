@@ -37,7 +37,7 @@ pip install runenv
 
 ## Usage
 
-Fist you have to create `.env` (this is the default name, you can use any name and have multiple environment files in projects) file in your project.
+First you have to create `.env` (this is the default name, you can use any name and have multiple environment files in projects) file in your project.
 
 
 **Example `.env` file:**
@@ -85,7 +85,7 @@ The `runenv` CLI can be used to run commands wrapped with environment loaded fro
 
 ```console
 $ runenv --help
-usage: runenv [-h] [-V] [-v {1,2,3}] [-p PREFIX] [-s] [--dry_run] env_file command
+usage: runenv [-h] [-V] [-v {1,2,3}] [-p PREFIX] [-s] [--dry-run] env_file command
 
 Run program with given environment file loaded
 
@@ -101,7 +101,7 @@ options:
   -p PREFIX, --prefix PREFIX
                         Load only variables with given prefix
   -s, --strip_prefix    Strip prefix given with --prefix from environment variables names
-  --dry_run             Return parsed .env instead of running command
+  --dry-run             Return parsed .env instead of running command
 ```
 
 **Example usage:**
