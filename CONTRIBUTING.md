@@ -90,6 +90,14 @@ local development.
 
 7.  Submit a pull request through the GitHub website.
 
+
+# Nix
+If you're using [nix](https://nix.dev/) package manager you can use included `flake.nix` by :
+
+```console
+$ nix develop
+```
+
 # Pull Request Guidelines
 
 Before you submit a pull request, check that it meets these guidelines:

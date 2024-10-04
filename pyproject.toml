@@ -35,6 +35,14 @@ Documentation = "https://github.com/onjin/runenv#readme"
 Issues = "https://github.com/onjin/runenv/issues"
 Source = "https://github.com/onjin/runenv"
 
+[project.optional-dependencies]
+develop = [
+  "hatch",
+  "black",
+  "ruff",
+  "mypy",
+]
+
 [tool.hatch.version]
 path = "runenv/__about__.py"
 
