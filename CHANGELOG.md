@@ -1,10 +1,24 @@
 # Changelog
 
+## Unreleased (2024-10-06)
+
+### Dev
+
+- upgrade flake.nix to self-contain without .venv 
+
+### Docs
+
+- fix `--dry_run` to `--dry-run` in docs, along with single mispell 
+
 ## v1.2.2 (2024-10-04)
 
 ### Fixes
 
 - change `--dry_run` into valid `--dry-run` option 
+
+### Chore
+
+- **changelog:** write CHANGELOG.md for version v1.2.2 
 
 ## v1.2.1 (2024-10-03)
 
@@ -14,7 +28,6 @@
 
 ### Chore
 
-- **changelog:** write CHANGELOG.md for version v1.3.0 
 - **changelog:** write CHANGELOG.md for version v1.2.0 
 - **changelog:** write CHANGELOG.md for version v1.2.0 
 

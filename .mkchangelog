@@ -11,6 +11,7 @@ commit_types_list = all
 commit_type_default_priority = 10
 tag_prefix = v
 raise_exceptions = False
+ignore_revs = 1841545f753b0d8e99248a1287155212080e10e5
 
 [commit_types]
 build = Build
