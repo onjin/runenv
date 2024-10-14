@@ -1,4 +1,7 @@
+
 # runenv
+
+Manage your application’s settings with `runenv`, using the [12-factor](http://12factor.net/) principles. This library provides both a CLI tool and a Python API to simplify the management of environment variables in your projects.
 
 <div align="center">
 
@@ -11,127 +14,159 @@
 </div>
 
 ---
-You can use *runenv* to manage your app settings using [12-factor](http://12factor.net/) principles.
 
-The `runenv` package provides a few things:
+## Table of Contents
 
-- [cli] Wrapper to run programs with modified environment variables loaded from given .env file.
-- [api] Python API to load variables from .env file into environment
+- [Features at a Glance](#features-at-a-glance)
+- [Getting Started](#getting-started)
+  - [Installation](#installation)
+  - [Quick CLI Usage](#quick-cli-usage)
+  - [Python API Overview](#python-api-overview)
+- [In-Depth Usage and Examples](#in-depth-usage-and-examples)
+  - [Using the CLI Tool](#using-the-cli-tool)
+  - [Python API Details](#python-api-details)
+  - [Framework Integration](#framework-integration)
+- [Example `.env` File](#example-env-file)
+- [Similar Projects](#similar-projects)
 
+## Features at a Glance
 
+- **CLI Tool**: Run programs with customized environment variables from a `.env` file.
+- **Python API**: Load and manage environment variables programmatically.
+- **Integration**: Easily integrate with frameworks like Django and Flask.
 
-**Table of Contents**
+---
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Features](#features)
-- [Integration](#integration)
+## Getting Started
 
-## Installation
+### Installation
 
-To install `runenv` package along with `runenv` CLI command run:
+To install `runenv` along with its CLI tool, run:
 
 ```console
 pip install runenv
 ```
 
-## Usage
+### Quick CLI Usage
 
-First you have to create `.env` (this is the default name, you can use any name and have multiple environment files in projects) file in your project.
+1. Create a `.env` file in your project’s root directory:
 
+   ```ini
+   BASE_URL=http://127.0.0.1:8000
+   DATABASE_URI=postgres://postgres:password@localhost/dbname
+   ```
 
-**Example `.env` file:**
+2. Run a command with the environment loaded from the `.env` file:
+
+   ```console
+   runenv .env ./your_command
+   ```
+
+### Python API Overview
+
+You can load environment variables directly in Python:
+
+```python
+from runenv import load_env
+
+# Load variables from the specified .env file
+load_env(".env")
+```
+
+## In-Depth Usage and Examples
+
+### Using the CLI Tool
+
+The `runenv` CLI provides flexibility to run any command with custom environment settings:
+
+```console
+runenv .env.development ./manage.py runserver
+```
+
+**Options:**
+
+- `--prefix`: Load variables with a specific prefix, e.g., `DJANGO_`.
+- `--strip-prefix`: Remove the prefix from variable names after loading.
+- `--dry-run`: Output the parsed `.env` file as environment without executing the command.
+
+Full help and options:
+
+```console
+runenv --help
+```
+
+### Python API Details
+
+#### `load_env`
+
+Load variables into the environment:
+
+```python
+load_env(env_file=".env", prefix="DJANGO_", strip_prefix=True, force=False, search_parent=0)
+```
+
+**Parameters:**
+
+- `env_file` (str, optional): The environment file to read from (default is `.env`).
+- `prefix` (str, optional): Load only variables that start with this prefix.
+- `strip_prefix` (bool, optional): If True, removes the prefix from variable names when loaded (default is True).
+- `force` (bool, optional): Force loading the `.env` file again even if already loaded by `runenv` CLI (default is False).
+- `search_parent` (int, optional): Number of parent directories to search for `.env` file (default is 0).
+
+#### `create_env`
+
+Parse `.env` contents into a dictionary without modifying the environment:
+
+```python
+env_vars = create_env(env_file=".env", prefix="APP_", strip_prefix=True)
+print(env_vars)
+```
+
+**Parameters:**
+
+- `env_file` (str, optional): The environment file to read from (default is `.env`).
+- `prefix` (str, optional): Load only variables that start with this prefix.
+- `strip_prefix` (bool, optional): If True, removes the prefix from variable names when loaded (default is True).
+
+### Framework Integration
+
+Easily integrate `runenv` with web frameworks:
+
+```python
+# In Django's manage.py or Flask's app setup
+from runenv import load_env
+load_env(".env")
+```
+
+## Example `.env` File
+
+The `.env` file can contain simple key-value pairs, comment lines, and inline comments:
 
 ```ini
+# Base settings
 BASE_URL=http://127.0.0.1:8000
 DATABASE_URI=postgres://postgres:password@localhost/dbname
 
-# line with comment
-EMAIL_HOST=smtp.mandrillapp.com
-EMAIL_PORT=587                             # inline comment
-EMAIL_HOST_USER="double quoted value"
-EMAIL_HOST_PASSWORD='single quoted value'
-EMAIL_FROM=user@${EMAIL_HOST}              # reuse variable from same file
+# Email configuration
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587  # Port for SMTP
+EMAIL_USER="user@example.com"
+EMAIL_PASSWORD='password'
 EMAIL_USE_TLS=1
+
+# Reusing variables
+EMAIL_FROM=user@${EMAIL_HOST}
 ```
 
-### Python API
+- Variables are set in `KEY=VALUE` pairs.
+- Use `#` for comments.
+- Inline comments are also supported after a `#`.
 
-#### load_env(env_file=".env", prefix=None, strip_prefix=True, force=False, search_parent=0)`
+## Similar Projects
 
-This function is loading content of `.env` file into environment without raising errors if file does not exist.
+- [envdir](https://github.com/jezdez/envdir): Run programs with a modified environment based on files in a directory.
+- [python-dotenv](https://github.com/theskumar/python-dotenv): Reads key-value pairs from `.env` files and adds them to the environment.
 
-**Options**:
+---
 
-- `env_file`: optional environment file name; default `.env`
-- `prefix`: optional prefix to filter loaded variables; f.e. `DJANGO_` will load only `DJANGO_*` variables
-- `strip_prefix`: whether strip prefix when loading variables; default `True`; f.e. `DJANGO_SECRET` will be loaded as `SECRET` if `prefix=DJANGO_`
-- `force`: whether load `.env` file again, even if application was started by `runenv` CLI wrapper (this wrapper already is loading `.env` file)
-- `search_parent`: how many parent directories search for `.env` file; default `0`
-
-#### create_env(env_file=".env", prefix=None, strip_prefix=True)`
-
-This function is only parsing content of `.env` file and returns it as python dictionary, without changing environment.
-
-**Options**:
-
-- `env_file`: optional environment file name; default `.env`
-- `prefix`: optional prefix to filter loaded variables; f.e. `DJANGO_` will load only `DJANGO_*` variables
-- `strip_prefix`: whether strip prefix when loading variables; default `True`; f.e. `DJANGO_SECRET` will be loaded as `SECRET` if `prefix=DJANGO_`
-
-### CLI
-
-The `runenv` CLI can be used to run commands wrapped with environment loaded from passed `.env` files.
-
-```console
-$ runenv --help
-usage: runenv [-h] [-V] [-v {1,2,3}] [-p PREFIX] [-s] [--dry-run] env_file command
-
-Run program with given environment file loaded
-
-positional arguments:
-  env_file              Environment file to load
-  command               Command to run with loaded environment
-
-options:
-  -h, --help            show this help message and exit
-  -V, --version         show program's version number and exit
-  -v {1,2,3}, --verbosity {1,2,3}
-                        verbosity level, 1 - (ERROR, default), 2 - (INFO) or 3 - (DEBUG)
-  -p PREFIX, --prefix PREFIX
-                        Load only variables with given prefix
-  -s, --strip_prefix    Strip prefix given with --prefix from environment variables names
-  --dry-run             Return parsed .env instead of running command
-```
-
-**Example usage:**
-
-Run `./manage.py serve` command with environment loaded from `.env.development` file.
-
-```console
-$ runenv .env.development ./manage.py serve
-```
-
-**Options**:
-
-- `env_file`: environment file name to load
-- `--prefix`: optional prefix to filter loaded variables; f.e. `DJANGO_` will load only `DJANGO_*` variables
-- `--strip-prefix`: whether strip prefix when loading variables; default `True`; f.e. `DJANGO_SECRET` will be loaded as `SECRET` if `prefix=DJANGO_`
-- `--dry-run`: only display parsed `.env` result instead of loading environment and running command
-
-
-## Integration
-
-To use `load_env` with [Django](http://djangoproject.com/) or [Flask](http://flask.pocoo.org/), put the following code in `manage.py` and `wsgi.py` files.
-
-``` python
-from runenv import load_env
-load_env()
-```
-
-## Similar projects
-
--   <https://github.com/jezdez/envdir> - runs another program with a
-    modified environment according to files in a specified directory
--   <https://github.com/theskumar/python-dotenv> - Reads the key,value
-    pair from .env and adds them to environment variable
+With `runenv`, managing environment variables becomes simpler and more consistent, making it easier to develop and deploy applications across different environments.
