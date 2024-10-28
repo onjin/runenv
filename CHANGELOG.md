@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased (2024-10-06)
+## Unreleased (2024-10-28)
+
+### Chore
+
+- rewrite CHANGELOG.md 
 
 ### Dev
 
@@ -8,6 +12,7 @@
 
 ### Docs
 
+- update README.md 
 - fix `--dry_run` to `--dry-run` in docs, along with single mispell 
 
 ## v1.2.2 (2024-10-04)
@@ -98,7 +103,11 @@
 
 ### Features
 
-- add support python 3.5 docs: refine README.md
+- add support python 3.5 
+
+### Docs
+
+- refine README.md 
 
 ## v0.4.0 (2016-08-08)
 
