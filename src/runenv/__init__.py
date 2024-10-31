@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2015-present Marek Wywiał <onjinx@gmail.com>
 #
 # SPDX-License-Identifier: MIT
+from __future__ import annotations
+
 import argparse
 import logging
 import os
