@@ -33,7 +33,7 @@ runenv = "runenv:run"
 
 [project.optional-dependencies]
 devel-types = [
-  "mypy           ==1.13.0",
+  "mypy           ==1.4.1",
 ]
 devel-test = [
   "coverage[toml]    ~=7.0",
