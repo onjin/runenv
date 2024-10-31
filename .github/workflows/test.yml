@@ -41,19 +41,16 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Ensure latest pip
-      run: python -m pip install --upgrade pip black ruff pytest pytest-cov coverage[toml]
+    - name: Set up uv
+      uses: astral-sh/setup-uv@3b9817b1bf26186f03ab8277bab9b827ea5cc254 # v3.2.0
+      with:
+        enable-cache: true
+        cache-dependency-glob: |
+          **/pyproject.toml
+          **/uv.lock
 
-    - name: Install ourself
-      run: |
-        pip install -e .
-
-    - name: Lint ruff
-      run: ruff check .
-
-    - name: Lint black
-      run: black --check --diff .
+    - name: Install Hatch
+      run: uv tool install hatch
 
     - name: Run tests
-      run: pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=runenv --cov=tests
-
+      run: hatch run test
