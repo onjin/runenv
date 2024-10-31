@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
-test_runenv
+test_runenv.
 ----------------------------------
 
 Tests for `runenv` module.
@@ -31,10 +30,10 @@ def capture(command, *args, **kwargs):
 
 
 class TestRunenv(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.env_file = os.path.join(TESTS_DIR, "env.test")
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         variables = (
             "VARIABLED",
             "STRING",
@@ -58,166 +57,166 @@ class TestRunenv(unittest.TestCase):
             if k in os.environ:
                 del os.environ[k]
 
-    def test_create_env(self):
+    def test_create_env(self) -> None:
         environ = create_env(self.env_file)
-        self.assertEqual(environ.get("VARIABLED"), "some_lazy_variable_12")
-        self.assertEqual(environ.get("STRING"), "some string with spaces")
-        self.assertEqual(environ.get("NUMBER"), "12")
-        self.assertEqual(environ.get("FLOAT"), "11.11")
-        self.assertEqual(environ.get("EMPTY"), "")
-        self.assertEqual(environ.get("SPACED"), "  spaced")
-        self.assertEqual(environ.get("SINGLE_QUOTE"), 'so"me')
-        self.assertEqual(environ.get("DOUBLE_QUOTE"), "so'me")
-        self.assertEqual(environ.get("DOUBLE_QUOTE_WITH_COMMENT"), "so'me either")
-        self.assertFalse("COMMENTED" in environ)
-        self.assertFalse("# COMMENTED" in environ)
+        assert environ.get("VARIABLED") == "some_lazy_variable_12"
+        assert environ.get("STRING") == "some string with spaces"
+        assert environ.get("NUMBER") == "12"
+        assert environ.get("FLOAT") == "11.11"
+        assert environ.get("EMPTY") == ""
+        assert environ.get("SPACED") == "  spaced"
+        assert environ.get("SINGLE_QUOTE") == 'so"me'
+        assert environ.get("DOUBLE_QUOTE") == "so'me"
+        assert environ.get("DOUBLE_QUOTE_WITH_COMMENT") == "so'me either"
+        assert "COMMENTED" not in environ
+        assert "# COMMENTED" not in environ
 
     @pytest.mark.skipif(
         "linux" not in sys.platform,
         reason="works on linux",
     )
-    def test_run(self):
-        self.assertEqual(run([self.env_file, "/bin/true"]), 0)
-        self.assertEqual(run([self.env_file, "/bin/false"]), 1)
+    def test_run(self) -> None:
+        assert run([self.env_file, "/bin/true"]) == 0
+        assert run([self.env_file, "/bin/false"]) == 1
         with capture(run, [self.env_file, "/usr/bin/env"]) as output:
-            self.assertTrue("_RUNENV_WRAPPED", output)
+            assert "_RUNENV_WRAPPED", output
 
-    def test_run_from_path(self):
-        self.assertEqual(run([self.env_file, "true"]), 0)
-        self.assertEqual(run([self.env_file, "false"]), 1)
+    def test_run_from_path(self) -> None:
+        assert run([self.env_file, "true"]) == 0
+        assert run([self.env_file, "false"]) == 1
         with capture(run, [self.env_file, "env"]) as output:
-            self.assertTrue("_RUNENV_WRAPPED", output)
+            assert "_RUNENV_WRAPPED", output
 
-    def test_load_env_from_default_file(self):
+    def test_load_env_from_default_file(self) -> None:
         os.chdir(os.path.join(TESTS_DIR, "cwd"))
 
-        self.assertFalse("RUNENV_STRING" in os.environ)
-        self.assertFalse("RUNENV_NUMBER" in os.environ)
-        self.assertFalse("RUNENV_FLOAT" in os.environ)
+        assert "RUNENV_STRING" not in os.environ
+        assert "RUNENV_NUMBER" not in os.environ
+        assert "RUNENV_FLOAT" not in os.environ
 
         load_env()
 
-        self.assertTrue("RUNENV_STRING" in os.environ)
-        self.assertTrue("RUNENV_NUMBER" in os.environ)
-        self.assertTrue("RUNENV_FLOAT" in os.environ)
-        self.assertEqual(os.environ.get("RUNENV_STRING"), "some string")
-        self.assertEqual(os.environ.get("RUNENV_NUMBER"), "13")
-        self.assertEqual(os.environ.get("RUNENV_FLOAT"), "12.12")
+        assert "RUNENV_STRING" in os.environ
+        assert "RUNENV_NUMBER" in os.environ
+        assert "RUNENV_FLOAT" in os.environ
+        assert os.environ.get("RUNENV_STRING") == "some string"
+        assert os.environ.get("RUNENV_NUMBER") == "13"
+        assert os.environ.get("RUNENV_FLOAT") == "12.12"
 
-    def test_load_env_only_prefixed_variables(self):
+    def test_load_env_only_prefixed_variables(self) -> None:
         os.chdir(os.path.join(TESTS_DIR, "cwd"))
 
-        self.assertFalse("RUNENVC_STRING" in os.environ)
-        self.assertFalse("RUNENVC_NUMBER" in os.environ)
-        self.assertFalse("RUNENVC_FLOAT" in os.environ)
+        assert "RUNENVC_STRING" not in os.environ
+        assert "RUNENVC_NUMBER" not in os.environ
+        assert "RUNENVC_FLOAT" not in os.environ
 
         load_env(env_file="env.custom", prefix="RUNENVC_S")
 
-        self.assertTrue("TRING" in os.environ)
-        self.assertFalse("RUNENVC_STRING" in os.environ)
-        self.assertFalse("RUNENVC_NUMBER" in os.environ)
-        self.assertFalse("RUNENVC_FLOAT" in os.environ)
+        assert "TRING" in os.environ
+        assert "RUNENVC_STRING" not in os.environ
+        assert "RUNENVC_NUMBER" not in os.environ
+        assert "RUNENVC_FLOAT" not in os.environ
 
-    def test_load_env_only_prefixed_variables_without_strip_prefix(self):
+    def test_load_env_only_prefixed_variables_without_strip_prefix(self) -> None:
         os.chdir(os.path.join(TESTS_DIR, "cwd"))
 
-        self.assertFalse("RUNENVC_STRING" in os.environ)
-        self.assertFalse("RUNENVC_NUMBER" in os.environ)
-        self.assertFalse("RUNENVC_FLOAT" in os.environ)
+        assert "RUNENVC_STRING" not in os.environ
+        assert "RUNENVC_NUMBER" not in os.environ
+        assert "RUNENVC_FLOAT" not in os.environ
 
         load_env(env_file="env.custom", prefix="RUNENVC_S", strip_prefix=False)
 
-        self.assertTrue("RUNENVC_STRING" in os.environ)
-        self.assertFalse("RUNENVC_NUMBER" in os.environ)
-        self.assertFalse("RUNENVC_FLOAT" in os.environ)
+        assert "RUNENVC_STRING" in os.environ
+        assert "RUNENVC_NUMBER" not in os.environ
+        assert "RUNENVC_FLOAT" not in os.environ
 
-    def test_load_env_from_custom_file(self):
+    def test_load_env_from_custom_file(self) -> None:
         os.chdir(os.path.join(TESTS_DIR, "cwd"))
 
-        self.assertFalse("RUNENVC_STRING" in os.environ)
-        self.assertFalse("RUNENVC_NUMBER" in os.environ)
-        self.assertFalse("RUNENVC_FLOAT" in os.environ)
+        assert "RUNENVC_STRING" not in os.environ
+        assert "RUNENVC_NUMBER" not in os.environ
+        assert "RUNENVC_FLOAT" not in os.environ
 
         load_env(env_file="env.custom")
 
-        self.assertTrue("RUNENVC_STRING" in os.environ)
-        self.assertTrue("RUNENVC_NUMBER" in os.environ)
-        self.assertTrue("RUNENVC_FLOAT" in os.environ)
-        self.assertEqual(os.environ.get("RUNENVC_STRING"), "custom string")
-        self.assertEqual(os.environ.get("RUNENVC_NUMBER"), "14")
-        self.assertEqual(os.environ.get("RUNENVC_FLOAT"), "14.14")
+        assert "RUNENVC_STRING" in os.environ
+        assert "RUNENVC_NUMBER" in os.environ
+        assert "RUNENVC_FLOAT" in os.environ
+        assert os.environ.get("RUNENVC_STRING") == "custom string"
+        assert os.environ.get("RUNENVC_NUMBER") == "14"
+        assert os.environ.get("RUNENVC_FLOAT") == "14.14"
 
-    def test_load_env_skip_if_wrapped_by_runenv(self):
+    def test_load_env_skip_if_wrapped_by_runenv(self) -> None:
         os.chdir(os.path.join(TESTS_DIR, "cwd"))
 
-        self.assertFalse("RUNENVC_STRING" in os.environ)
-        self.assertFalse("RUNENVC_NUMBER" in os.environ)
-        self.assertFalse("RUNENVC_FLOAT" in os.environ)
+        assert "RUNENVC_STRING" not in os.environ
+        assert "RUNENVC_NUMBER" not in os.environ
+        assert "RUNENVC_FLOAT" not in os.environ
 
         # mark as runned by `envfile` wrapper
         os.environ["_RUNENV_WRAPPED"] = "1"
 
         load_env(env_file="env.custom")
 
-        self.assertFalse("RUNENVC_STRING" in os.environ)
-        self.assertFalse("RUNENVC_NUMBER" in os.environ)
-        self.assertFalse("RUNENVC_FLOAT" in os.environ)
+        assert "RUNENVC_STRING" not in os.environ
+        assert "RUNENVC_NUMBER" not in os.environ
+        assert "RUNENVC_FLOAT" not in os.environ
 
-    def test_load_env_force_even_wrapped_by_runenv(self):
+    def test_load_env_force_even_wrapped_by_runenv(self) -> None:
         os.chdir(os.path.join(TESTS_DIR, "cwd"))
 
-        self.assertFalse("RUNENVC_STRING" in os.environ)
-        self.assertFalse("RUNENVC_NUMBER" in os.environ)
-        self.assertFalse("RUNENVC_FLOAT" in os.environ)
+        assert "RUNENVC_STRING" not in os.environ
+        assert "RUNENVC_NUMBER" not in os.environ
+        assert "RUNENVC_FLOAT" not in os.environ
 
         os.environ["_RUNENV_WRAPPED"] = "1"
 
         load_env(env_file="env.custom", force=True)
 
-        self.assertTrue("RUNENVC_STRING" in os.environ)
-        self.assertTrue("RUNENVC_NUMBER" in os.environ)
-        self.assertTrue("RUNENVC_FLOAT" in os.environ)
-        self.assertEqual(os.environ.get("RUNENVC_STRING"), "custom string")
-        self.assertEqual(os.environ.get("RUNENVC_NUMBER"), "14")
-        self.assertEqual(os.environ.get("RUNENVC_FLOAT"), "14.14")
+        assert "RUNENVC_STRING" in os.environ
+        assert "RUNENVC_NUMBER" in os.environ
+        assert "RUNENVC_FLOAT" in os.environ
+        assert os.environ.get("RUNENVC_STRING") == "custom string"
+        assert os.environ.get("RUNENVC_NUMBER") == "14"
+        assert os.environ.get("RUNENVC_FLOAT") == "14.14"
 
-    def test_load_env_from_missing_file(self):
+    def test_load_env_from_missing_file(self) -> None:
         load_env(env_file="env.missing")
 
-    def test_search_parent(self):
+    def test_search_parent(self) -> None:
         env_file = "env.search_parent"
         os.chdir(os.path.join(TESTS_DIR, "search_parent", "project"))
 
         load_env(env_file=env_file)
-        self.assertFalse("PARENT" in os.environ)
+        assert "PARENT" not in os.environ
 
         load_env(env_file=env_file)
-        self.assertFalse("PARENT" in os.environ)
+        assert "PARENT" not in os.environ
 
         load_env(env_file=env_file, search_parent=1)
-        self.assertTrue("PARENT" in os.environ)
-        self.assertEqual(os.environ.get("PARENT"), "2")
+        assert "PARENT" in os.environ
+        assert os.environ.get("PARENT") == "2"
 
         load_env(env_file=env_file, search_parent=2)
-        self.assertTrue("PARENT" in os.environ)
-        self.assertEqual(os.environ.get("PARENT"), "2")
+        assert "PARENT" in os.environ
+        assert os.environ.get("PARENT") == "2"
 
-    def test_search_grand_parent(self):
+    def test_search_grand_parent(self) -> None:
         env_file = "env.search_grandparent"
         os.chdir(os.path.join(TESTS_DIR, "search_grandparent", "project"))
 
         load_env(env_file=env_file)
-        self.assertFalse("GRAND_PARENT" in os.environ)
+        assert "GRAND_PARENT" not in os.environ
 
         load_env(env_file=env_file)
-        self.assertFalse("GRAND_PARENT" in os.environ)
+        assert "GRAND_PARENT" not in os.environ
 
         load_env(env_file=env_file, search_parent=1)
-        self.assertFalse("GRAND_PARENT" in os.environ)
+        assert "GRAND_PARENT" not in os.environ
 
         load_env(env_file=env_file, search_parent=2)
-        self.assertTrue("GRAND_PARENT" in os.environ)
-        self.assertEqual(os.environ.get("GRAND_PARENT"), "3")
+        assert "GRAND_PARENT" in os.environ
+        assert os.environ.get("GRAND_PARENT") == "3"
 
 
 if __name__ == "__main__":

@@ -15,7 +15,6 @@
         pypkgs = pkgs.python3Packages;
         python = pkgs.python3.override {
           packageOverrides = self: super: {
-            runenv = runenv;
             hatch = pkgs.hatch;
             ruff = pkgs.ruff;
             mypy = pkgs.mypy;
@@ -24,26 +23,6 @@
         };
         project =
           pyproject-nix.lib.project.loadPyproject { projectRoot = ./.; };
-
-        runenv = python.pkgs.buildPythonPackage rec {
-          pname = "runenv";
-          version = "1.2.2";
-
-          src = python.pkgs.fetchPypi {
-            inherit pname version;
-            sha256 = "";
-          };
-
-          doCheck = false;
-          checkInputs = [ ];
-          propagatedBuildInputs = [ pypkgs.feedparser ];
-
-          meta = with pkgs.lib; {
-            homepage = "https://github.com/onjin/runenv";
-            description = "Wrapper to run programs with different env";
-            license = licenses.mit;
-          };
-        };
 
       in {
         packages = {
@@ -67,7 +46,7 @@
             # Returns a function that can be passed to `python.withPackages`
             arg = project.renderers.withPackages {
               inherit python;
-              extras = [ "develop" ];
+              extras = [ ];
             };
 
             # Returns a wrapped environment (virtualenv like) with all our packages
@@ -84,6 +63,7 @@
               pkgs.mypy
               pkgs.black
               pypkgs.keyrings-alt
+              pypkgs.pip
             ];
             shellHook = ''
               export PYTHONPATH="$(pwd):$PYTHONPATH"

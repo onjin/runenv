@@ -19,12 +19,12 @@ logger = logging.getLogger("runenv")
 VARIABLE_REFERENCE_REGEX = re.compile(r"\$\{(\w+)\}")
 
 
-def add_stdout_handler(verbosity: int):
+def add_stdout_handler(verbosity: int) -> None:
     """Adds stdout handler with given verbosity to logger.
 
     Args:
-        logger (Logger) - python logger instance
-        verbosity (int) - target verbosity
+        logger: python logger instance
+        verbosity: target verbosity
                           1 - ERROR
                           2 - INFO
                           3 - DEBUG
@@ -33,13 +33,17 @@ def add_stdout_handler(verbosity: int):
         add_stdout_handler(verbosity=3)
 
     """
-
     v_map = {1: logging.ERROR, 2: logging.INFO, 3: logging.DEBUG}
     level = v_map.get(verbosity, 1)
     logging.basicConfig(level=level)
 
 
-def run(argv: Optional[Sequence[str]] = None):
+def run(argv: Optional[Sequence[str]] = None) -> int:
+    """Run CLI.
+
+    Args:
+        argv: list of CLI arguments
+    """
     prog = "runenv"
     description = "Run program with given environment file loaded"
 
@@ -97,9 +101,9 @@ def run(argv: Optional[Sequence[str]] = None):
 
     try:
         if cmd is None or not (stat.S_IXUSR & os.stat(cmd)[stat.ST_MODE]):
-            _ = sys.stdout.write("File `%s is not executable\n" % cmd)
+            _ = sys.stdout.write(f"File `{cmd} is not executable\n")
             sys.exit(1)
-        return subprocess.check_call([cmd] + argv, env=os.environ)  # noqa
+        return subprocess.check_call([cmd] + argv, env=os.environ)  # noqa: RUF005, S603
     except subprocess.CalledProcessError as e:
         return e.returncode
 
@@ -109,27 +113,24 @@ def resolve_lazy_value(value: str, env_vars: Dict[str, str]) -> str:
     Recursively resolve variable references (e.g., ${VAR_NAME}) in a value using env_vars.
     """
 
-    def replace_match(match):
+    def replace_match(match: re.Match[str]) -> str:
         var_name = match.group(1)
         # Resolve variable from env_vars or os.environ
         return env_vars.get(var_name, os.environ.get(var_name, ""))
 
     # Replace all occurrences of ${VAR_NAME} in the value
-    resolved_value = VARIABLE_REFERENCE_REGEX.sub(replace_match, value)
-    return resolved_value
+    return VARIABLE_REFERENCE_REGEX.sub(replace_match, value)
 
 
 def create_env(
     env_file: str = ".env",
     prefix: Union[str, None] = None,
     strip_prefix: bool = True,  # noqa: FBT001,FBT002
-) -> Dict[str, Union[str, str]]:
-    """Create environ dictionary from current os.environ and
-    variables got from given `env_file`"""
-
+) -> Dict[str, str]:
+    """Create environ dictionary from current os.environ and variables got from given `env_file`."""
     environ: Dict[str, str] = {}
-    with open(env_file, "r") as f:
-        for raw_line in f.readlines():
+    with open(env_file) as f:
+        for raw_line in f:
             line = raw_line.rstrip(os.linesep)
 
             # Strip leading and trailing whitespace from the line
@@ -146,10 +147,10 @@ def create_env(
 
                 # skip not prefixed if prefix used
                 if prefix and key != prefix and not key.startswith(prefix):
-                    logger.debug(f"skip {key} without prefix {prefix}")
+                    logger.debug("skip %s without prefix %s", key, prefix)
                     continue
                 if prefix and key != prefix and strip_prefix:
-                    logger.debug(f"strip prefix {prefix} from {key}")
+                    logger.debug("strip %s without prefix %s", key, prefix)
                     key = key[len(prefix) :]
 
                 # Strip quotes if they exist
@@ -158,7 +159,7 @@ def create_env(
 
                 environ[key] = value
             else:
-                logger.debug(f"skip not matched {line}")
+                logger.debug("skip not matched %s", line)
 
     # Perform lazy evaluation after parsing all variables
     for key, value in environ.items():
@@ -176,16 +177,16 @@ def load_env(
 ) -> None:
     # we need absolute path to support `search_parent`
     env_file = os.path.abspath(env_file)
-    logger.info("trying env file {0}".format(env_file))
+    logger.info("trying env file %s", env_file)
 
     if "_RUNENV_WRAPPED" in os.environ and not force:
-        return
+        return None
     if not os.path.exists(env_file):
         if not search_parent:
-            return
-        else:
-            env_file = os.path.join(os.path.dirname(os.path.dirname(env_file)), os.path.basename(env_file))
-            return load_env(env_file, prefix, strip_prefix, force, search_parent - 1)
+            return None
+        env_file = os.path.join(os.path.dirname(os.path.dirname(env_file)), os.path.basename(env_file))
+        return load_env(env_file, prefix, strip_prefix, force, search_parent - 1)
 
     os.environ.update(create_env(env_file, prefix=prefix, strip_prefix=strip_prefix))
-    logger.info("env file {0} loaded".format(env_file))
+    logger.info("env file %s loaded", env_file)
+    return None

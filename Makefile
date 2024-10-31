@@ -1,49 +1,51 @@
-.PHONY: clean-pyc clean-build clean
-
 help:
-	@echo "clean - remove all build, test, coverage and Python artifacts"
-	@echo "clean-build - remove build artifacts"
-	@echo "clean-pyc - remove Python file artifacts"
-	@echo "lint - check style black/ruff/mypy"
-	@echo "test - run tests quickly with the default Python"
-	@echo "test-all - run tests on every Python version with tox"
-	@echo "coverage - check code coverage quickly with the default Python"
-	@echo "release - package and upload a release"
-	@echo "dist - package"
-	@echo "install - install the package to the active Python's site-packages"
-
-clean: clean-build clean-pyc
-
-clean-build:
-	rm -fr build/
-	rm -fr dist/
-	rm -fr .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
-	#find . -name '*.egg' -exec rm -f {} +
-
-clean-pyc:
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
+	@echo ""
+	@echo "  clean      to clear build and distribution directories"
+	@echo "  package    to build a wheel and sdist"
+	@echo "  release    to perform a release build, including deps, test, and package targets"
+	@echo ""
+	@echo "  test       to run all tests on the current python version"
+	@echo "  test-all   to run all tests on all supported python versions"
+	@echo "  lint       to run the lints"
+	@echo "  ci         to run test and lints"
+	@echo ""
+	@echo "  help       to show this help message"
+	@echo ""
+	@echo "Most of these targets are just wrappers around hatch commands."
+	@echo "See https://hatch.pypa.org for information to install hatch."
 
 
-lint:
-	hatch run lint:all
+.PHONY: release
+release: clean test package
 
+
+.PHONY: clean
+clean:
+	hatch clean
+
+
+.PHONY: package
+package:
+	hatch build
+
+
+.PHONY: test
 test:
-	hatch test
+	hatch run test
+	hatch run coverage report -m --fail-under=100
 
+
+.PHONY: test-all
 test-all:
-	hatch run test:cov
+	hatch run test:test
 
-release: clean
-	hatch build
-	hatch publish
 
-dist: clean
-	hatch build
-	ls -l dist
+.PHONY: lint
+lint:
+	hatch run lint
+	hatch run format
+	hatch run typecheck
 
-install: clean
-	pip install -e .
+
+.PHONY: ci
+ci: test lint
