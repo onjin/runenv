@@ -37,7 +37,7 @@ devel-types = [
 ]
 devel-test = [
   "coverage[toml]    ~=7.0",
-  "pytest            ~=8.0",
+  "pytest            ~=5.2.2",
   "pytest-cov        ~=4.1.0",
 ]
 devel = ["runenv[devel-types,devel-test]", "ruff==0.7.1", "mkchangelog"]
