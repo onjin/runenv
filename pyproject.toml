@@ -33,12 +33,12 @@ runenv = "runenv:run"
 
 [project.optional-dependencies]
 devel-types = [
-  "mypy           ==1.4.1",
+  "mypy",
 ]
 devel-test = [
-  "coverage[toml]    ~=7.0",
-  "pytest            ~=5.2.2",
-  "pytest-cov        ~=4.1.0",
+  "coverage[toml]",
+  "pytest",
+  "pytest-cov",
 ]
 devel = ["runenv[devel-types,devel-test]", "ruff==0.7.1", "mkchangelog"]
 
