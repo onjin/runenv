@@ -3,15 +3,16 @@
 
 Manage your application’s settings with `runenv`, using the [12-factor](http://12factor.net/) principles. This library provides both a CLI tool and a Python API to simplify the management of environment variables in your projects.
 
-<div align="center">
+| Section  | Details |
+|----------|---------|
+| CI/CD    | [![CI - Test](https://github.com/onjin/runenv/actions/workflows/test.yml/badge.svg)](https://github.com/onjin/runenv/actions/workflows/test.yml) |
+| Package  | [![PyPI - Version](https://img.shields.io/pypi/v/runenv.svg?logo=pypi&label=PyPI&logoColor=gold)](https://pypi.org/project/runenv/) |
+| Downloads | [![PyPI - Downloads](https://img.shields.io/pypi/dm/runenv.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold)](https://pypi.org/project/runenv/) |
+| Python Version | [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/runenv.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/runenv/) |
+| Meta | [![Linting - Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![Code Style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Types - MyPy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy) |
+| License | [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) |
+| Changes | [CHANGELOG.md](CHANGELOG.md) |
 
-|         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| CI/CD   | [![CI - Test](https://github.com/onjin/runenv/actions/workflows/test.yml/badge.svg)](https://github.com/onjin/runenv/actions/workflows/test.yml)                                                                                                                                                                                                                                                                                                                                       |
-| Package | [![PyPI - Version](https://img.shields.io/pypi/v/runenv.svg?logo=pypi&label=PyPI&logoColor=gold)](https://pypi.org/project/runenv/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/runenv.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold)](https://pypi.org/project/runenv/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/runenv.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/runenv/)                 |
-| Meta    | [![linting - Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![code style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy) [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) |
-| Changes   | [CHANGELOG.md](CHANGELOG.md) |
-</div>
 
 ---
 
@@ -51,10 +52,27 @@ pip install runenv
 
 1. Create a `.env` file in your project’s root directory:
 
-   ```ini
-   BASE_URL=http://127.0.0.1:8000
-   DATABASE_URI=postgres://postgres:password@localhost/dbname
-   ```
+The `.env` file can contain simple key-value pairs, comment lines, and inline comments:
+
+```ini
+# Base settings
+BASE_URL=http://127.0.0.1:8000
+DATABASE_URI=postgres://postgres:password@localhost/dbname
+
+# Email configuration
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587  # Port for SMTP
+EMAIL_USER="user@example.com"
+EMAIL_PASSWORD='password'
+EMAIL_USE_TLS=1
+
+# Reusing variables
+EMAIL_FROM=user@${EMAIL_HOST}
+```
+
+- Variables are set in `KEY=VALUE` pairs.
+- Use `#` for comments.
+- Inline comments are also supported after a `#`.
 
 2. Run a command with the environment loaded from the `.env` file:
 
@@ -138,29 +156,6 @@ from runenv import load_env
 load_env(".env")
 ```
 
-## Example `.env` File
-
-The `.env` file can contain simple key-value pairs, comment lines, and inline comments:
-
-```ini
-# Base settings
-BASE_URL=http://127.0.0.1:8000
-DATABASE_URI=postgres://postgres:password@localhost/dbname
-
-# Email configuration
-EMAIL_HOST=smtp.example.com
-EMAIL_PORT=587  # Port for SMTP
-EMAIL_USER="user@example.com"
-EMAIL_PASSWORD='password'
-EMAIL_USE_TLS=1
-
-# Reusing variables
-EMAIL_FROM=user@${EMAIL_HOST}
-```
-
-- Variables are set in `KEY=VALUE` pairs.
-- Use `#` for comments.
-- Inline comments are also supported after a `#`.
 
 ## Similar Projects
 

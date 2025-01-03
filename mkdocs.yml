@@ -1,0 +1,7 @@
+site_name: runenv
+site_url: https://runenv.readthedocs.io/
+repo_url: https://github.com/onjin/runenv
+repo_name: onjin/runenv
+
+theme:
+  name: material

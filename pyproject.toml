@@ -6,20 +6,18 @@ readme = "README.md"
 requires-python = ">=2.7"
 license = "MIT"
 keywords = []
-authors = [
-  { name = "Marek Wywiał", email = "onjinx@gmail.com" },
-]
+authors = [{ name = "Marek Wywiał", email = "onjinx@gmail.com" }]
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = []
 
@@ -32,23 +30,20 @@ Source = "https://github.com/onjin/runenv"
 runenv = "runenv:run"
 
 [project.optional-dependencies]
-devel-types = [
-  "mypy",
+devel-types = ["mypy"]
+devel-test = ["coverage[toml]", "pytest", "pytest-cov"]
+devel-docs = ["mkdocs", "mkdocs-material"]
+devel = [
+    "runenv[devel-docs,devel-types,devel-test]",
+    "ruff==0.7.1",
+    "mkchangelog",
 ]
-devel-test = [
-  "coverage[toml]",
-  "pytest",
-  "pytest-cov",
-]
-devel = ["runenv[devel-types,devel-test]", "ruff==0.7.1", "mkchangelog"]
 
 ################################################################################
 ## Hatch Build Configuration
 ################################################################################
 [build-system]
-requires = [
-  "hatchling",
-]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 
@@ -63,17 +58,17 @@ path = "src/runenv/__about__.py"
 installer = "uv"
 features = ["devel"]
 extra-dependencies = [
-  "hatchling",
-  "packaging",
-  "setuptools ; python_version >= '3.12'",
+    "hatchling",
+    "packaging",
+    "setuptools ; python_version >= '3.12'",
 ]
 
 [tool.hatch.envs.default.scripts]
-lint       = "ruff check --output-format=full --show-fixes {args:./src}"
-format     = "black {args:./src}"
-typecheck  = "mypy {args:.}"
-test       = "pytest tests/ {args}"
-all        = ["format", "lint", "typecheck", "test"]
+lint = "ruff check --output-format=full --show-fixes {args:./src}"
+format = "black {args:./src}"
+typecheck = "mypy {args:.}"
+test = "pytest tests/ {args}"
+all = ["format", "lint", "typecheck", "test"]
 
 [tool.hatch.envs.test]
 installer = "uv"
@@ -89,24 +84,23 @@ python = ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
 [tool.pytest.ini_options]
 pythonpath = "."
 addopts = [
-  "--import-mode=importlib",
-  "--cov-config=pyproject.toml",
-  "--cov=runenv",
-  "--cov-report=xml",
+    "--import-mode=importlib",
+    "--cov-config=pyproject.toml",
+    "--cov=runenv",
+    "--cov-report=xml",
 ]
 filterwarnings = [
-  "ignore::DeprecationWarning:runenv",
-  "ignore::DeprecationWarning:tests",
-  "ignore::PendingDeprecationWarning:runenv",
-  "ignore::PendingDeprecationWarning:tests",
+    "ignore::DeprecationWarning:runenv",
+    "ignore::DeprecationWarning:tests",
+    "ignore::PendingDeprecationWarning:runenv",
+    "ignore::PendingDeprecationWarning:tests",
 ]
 
-log_level       = "NOTSET"
-log_format      = "%(asctime)s.%(msecs)03d [%(levelname)-8s] %(name)s: %(message)s"
+log_level = "NOTSET"
+log_format = "%(asctime)s.%(msecs)03d [%(levelname)-8s] %(name)s: %(message)s"
 log_date_format = "%H:%M:%S"
 
-markers = [
-]
+markers = []
 
 
 ################################################################################
@@ -114,15 +108,15 @@ markers = [
 ################################################################################
 
 [tool.coverage.paths]
-runenv  = ["/src/runenv"]
+runenv = ["/src/runenv"]
 tests = ["/tests"]
 
 [tool.coverage.report]
 exclude_lines = [
-  "if __name__ == .__main__.:", # Ignore non-runnable code
-  "if TYPE_CHECKING:",          # Ignore typing
-  "raise NotImplementedError",  # Ignore defensive assertions
-  "@(abc\\.)?abstractmethod",   # Ignore abstract methods
+    "if __name__ == .__main__.:", # Ignore non-runnable code
+    "if TYPE_CHECKING:",          # Ignore typing
+    "raise NotImplementedError",  # Ignore defensive assertions
+    "@(abc\\.)?abstractmethod",   # Ignore abstract methods
 ]
 
 ################################################################################
@@ -141,43 +135,42 @@ skip-string-normalization = true
 target-version = "py37"
 line-length = 120
 
-extend-exclude = [
-]
+extend-exclude = []
 
 [tool.ruff.lint]
 select = ["ALL"]
 
 ignore = [
-  "D200",   # Require single line docstrings to be on one line.
-  "D203",   # Require blank line before class docstring
-  "D212",   # Multi-line docstring summary must start at the first line
-  "ANN101", # `self` must be typed
-  "ANN102", # `cls` must be typed
-  "FIX002", # Forbid TODO in comments
-  "TD002",  # Assign someone to 'TODO' comments
+    "D200",   # Require single line docstrings to be on one line.
+    "D203",   # Require blank line before class docstring
+    "D212",   # Multi-line docstring summary must start at the first line
+    "ANN101", # `self` must be typed
+    "ANN102", # `cls` must be typed
+    "FIX002", # Forbid TODO in comments
+    "TD002",  # Assign someone to 'TODO' comments
 
-  # The following are disabled for compatibility with the formatter
-  "COM812", # Enforce trailing commas
-  "ISC001", # Require imports to be sorted
+    # The following are disabled for compatibility with the formatter
+    "COM812", # Enforce trailing commas
+    "ISC001", # Require imports to be sorted
 
-  "ANN401", # Sometimes we return Any for now
-  "PLR0913",# Allow too many parameters
-  "D107",   # Do not force docstrings on __init__
-  "D100",   # Missing docstrings
-  "D101",   # Missing docstrings
-  "D102",   # Missing docstrings
-  "D103",   # Missing docstrings
-  "D104",   # Missing docstrings
-  "C901",   # We have complex functions
-  "PLR0912",# With many branches
-  "PTH100", # Will migrate to Path later
-  "PTH110", # Will migrate to Path later
-  "PTH116", # Will migrate to Path later
-  "PTH118", # Will migrate to Path later
-  "PTH119", # Will migrate to Path later
-  "PTH120", # Will migrate to Path later
-  "PTH123", # Will migrate to Path later
-  "PTH207", # Will migrate to Path later
+    "ANN401",  # Sometimes we return Any for now
+    "PLR0913", # Allow too many parameters
+    "D107",    # Do not force docstrings on __init__
+    "D100",    # Missing docstrings
+    "D101",    # Missing docstrings
+    "D102",    # Missing docstrings
+    "D103",    # Missing docstrings
+    "D104",    # Missing docstrings
+    "C901",    # We have complex functions
+    "PLR0912", # With many branches
+    "PTH100",  # Will migrate to Path later
+    "PTH110",  # Will migrate to Path later
+    "PTH116",  # Will migrate to Path later
+    "PTH118",  # Will migrate to Path later
+    "PTH119",  # Will migrate to Path later
+    "PTH120",  # Will migrate to Path later
+    "PTH123",  # Will migrate to Path later
+    "PTH207",  # Will migrate to Path later
 ]
 
 [tool.ruff.lint.pyupgrade]
@@ -193,7 +186,7 @@ known-first-party = ["runenv"]
 ban-relative-imports = "all"
 
 [tool.ruff.format]
-preview               = true
+preview = true
 docstring-code-format = true
 
 [tool.ruff.lint.per-file-ignores]
