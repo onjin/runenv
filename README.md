@@ -100,17 +100,27 @@ The `runenv` CLI provides flexibility to run any command with custom environment
 ```console
 runenv .env.development ./manage.py runserver
 ```
-
-**Options:**
-
-- `--prefix`: Load variables with a specific prefix, e.g., `DJANGO_`.
-- `--strip-prefix`: Remove the prefix from variable names after loading.
-- `--dry-run`: Output the parsed `.env` file as environment without executing the command.
-
 Full help and options:
 
 ```console
 runenv --help
+usage: runenv [-h] [-V] [-v {1,2,3}] [-p PREFIX] [-s] [--dry-run] env_file command
+
+Run program with given environment file loaded
+
+positional arguments:
+  env_file              Environment file to load
+  command               Command to run with loaded environment
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v {1,2,3}, --verbosity {1,2,3}
+                        verbosity level, 1 - (ERROR, default), 2 - (INFO) or 3 - (DEBUG)
+  -p PREFIX, --prefix PREFIX
+                        Load only variables with given prefix
+  -s, --strip-prefix    Strip prefix given with --prefix from environment variables names
+  --dry-run             Return parsed .env instead of running command
 ```
 
 ### Python API Details

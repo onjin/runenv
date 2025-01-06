@@ -73,7 +73,7 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     )
     _ = parser.add_argument(
         "-s",
-        "--strip_prefix",
+        "--strip-prefix",
         action="store_true",
         help="Strip prefix given with --prefix from environment variables names",
     )
@@ -86,6 +86,7 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     args, argv = parser.parse_known_args(argv)
 
     add_stdout_handler(int(args.verbosity))
+    logger.debug("args: %s", args)
 
     loaded_env = create_env(args.env_file, prefix=args.prefix, strip_prefix=args.strip_prefix)
     loaded_env["_RUNENV_WRAPPED"] = "1"
