@@ -1,10 +1,18 @@
 # Changelog
 
-## Unreleased (2024-10-28)
+## v1.2.3 (2025-01-06)
+
+### Fixes
+
+- typo in `--strip-prefix` cli option 
 
 ### Chore
 
 - rewrite CHANGELOG.md 
+
+### CI
+
+- Run tests using uv + hatch 
 
 ### Dev
 
@@ -12,8 +20,24 @@
 
 ### Docs
 
+- fix path to requirements in .readthedocs.yaml 
+- add .readthedocs.yaml to re-enable readthedocs integration 
+- change artificial commits for v1.0.0 - split into separate files 
 - update README.md 
 - fix `--dry_run` to `--dry-run` in docs, along with single mispell 
+
+### Style
+
+- Move project into src, update flake.nix, Makefile & pyproject.toml with newest hatch layout. 
+
+### Test
+
+- exclude windows tests for 3.7 - has problem with hatch.exe 
+- change pinned version for devel 
+- change pytest version for python 3.7 
+- change python-cov version for python 3.7 
+- change mypy to 1.4.1 because of python 3.7 
+- Fix tests for python >= 3.8 (annotations) 
 
 ## v1.2.2 (2024-10-04)
 
