@@ -68,6 +68,10 @@ class TestRunenv(unittest.TestCase):
         assert environ.get("SINGLE_QUOTE") == 'so"me'
         assert environ.get("DOUBLE_QUOTE") == "so'me"
         assert environ.get("DOUBLE_QUOTE_WITH_COMMENT") == "so'me either"
+
+        assert environ.get("QUOTED_WITH_HASH") == "some#one"
+        assert environ.get("DOUBLE_QUOTED_WITH_HASH") == "some#one"
+
         assert "COMMENTED" not in environ
         assert "# COMMENTED" not in environ
 

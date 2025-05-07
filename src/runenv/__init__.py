@@ -144,9 +144,12 @@ def create_env(
                 continue
 
             # Match key-value pairs (supports inline comments and empty values)
-            match = re.match(r'^\s*([\w\.]+)\s*=\s*(["\']?.*?["\']?)\s*(?:#.*)?$', line)
+            match = re.match(r'^\s*([\w.]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\n#]*?))\s*(?:#.*)?$', line)
+
             if match:
-                key, value = match.groups()
+                key = match.group(1)
+                # Only one of groups 2, 3, or 4 will contain the value
+                value = next(g for g in match.groups()[1:] if g is not None)
 
                 # skip not prefixed if prefix used
                 if prefix and key != prefix and not key.startswith(prefix):
