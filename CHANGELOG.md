@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.2.4 (2025-05-07)
+
+### Fixes
+
+- allow for # in comments, closes: #9 
+
+### Chore
+
+- **changelog:** write CHANGELOG.md for version v1.2.3 
+- **changelog:** write CHANGELOG.md for version v1.2.3 
+
 ## v1.2.3 (2025-01-06)
 
 ### Fixes
@@ -9,6 +20,7 @@
 ### Chore
 
 - rewrite CHANGELOG.md 
+- **changelog:** write CHANGELOG.md for version v1.2.3 
 
 ### CI
 
