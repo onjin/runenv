@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.5 (2025-06-05)
+
+### Fixes
+
+- add python 3.13 as list of supported versions 
+
 ## v1.2.4 (2025-05-07)
 
 ### Fixes

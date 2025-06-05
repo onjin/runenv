@@ -130,7 +130,7 @@ def create_env(
     prefix: Union[str, None] = None,
     strip_prefix: bool = True,  # noqa: FBT001,FBT002
 ) -> Dict[str, str]:
-    """Create environ dictionary from current os.environ and variables got from given `env_file`."""
+    """Create environ dictionary from current variables got from given `env_file`."""
     environ: Dict[str, str] = {}
     with open(env_file) as f:
         for raw_line in f:

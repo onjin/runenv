@@ -1,177 +1,195 @@
-
 # runenv
 
-Manage your application’s settings with `runenv`, using the [12-factor](http://12factor.net/) principles. This library provides both a CLI tool and a Python API to simplify the management of environment variables in your projects.
+Manage application settings with ease using `runenv`, a lightweight tool inspired by [The Twelve-Factor App](https://12factor.net/config) methodology for configuration through environment variables.
 
-| Section  | Details |
-|----------|---------|
+`runenv` provides:
+- A CLI for language-agnostic `.env` profile execution
+- A Python API for programmatic `.env` loading
+
+> “Store config in the environment” — [12factor.net/config](https://12factor.net/config)
+
+| Section  | Status |
+|----------|--------|
 | CI/CD    | [![CI - Test](https://github.com/onjin/runenv/actions/workflows/test.yml/badge.svg)](https://github.com/onjin/runenv/actions/workflows/test.yml) |
-| Package  | [![PyPI - Version](https://img.shields.io/pypi/v/runenv.svg?logo=pypi&label=PyPI&logoColor=gold)](https://pypi.org/project/runenv/) |
-| Downloads | [![PyPI - Downloads](https://img.shields.io/pypi/dm/runenv.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold)](https://pypi.org/project/runenv/) |
-| Python Version | [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/runenv.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/runenv/) |
-| Meta | [![Linting - Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![Code Style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Types - MyPy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy) |
-| License | [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) |
-| Changes | [CHANGELOG.md](CHANGELOG.md) |
-
+| PyPI     | [![PyPI - Version](https://img.shields.io/pypi/v/runenv.svg?logo=pypi&label=PyPI)](https://pypi.org/project/runenv/) [![Downloads](https://img.shields.io/pypi/dm/runenv.svg?color=blue)](https://pypi.org/project/runenv/) |
+| Python   | [![Python Versions](https://img.shields.io/pypi/pyversions/runenv.svg?logo=python&label=Python)](https://pypi.org/project/runenv/) |
+| Style    | [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy) |
+| License  | [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) |
+| Docs     | [CHANGELOG.md](CHANGELOG.md) |
 
 ---
 
 ## Table of Contents
 
-- [Features at a Glance](#features-at-a-glance)
-- [Getting Started](#getting-started)
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
   - [Installation](#installation)
-  - [Quick CLI Usage](#quick-cli-usage)
-  - [Python API Overview](#python-api-overview)
-- [In-Depth Usage and Examples](#in-depth-usage-and-examples)
-  - [Using the CLI Tool](#using-the-cli-tool)
-  - [Python API Details](#python-api-details)
-  - [Framework Integration](#framework-integration)
-- [Example `.env` File](#example-env-file)
-- [Similar Projects](#similar-projects)
-
-## Features at a Glance
-
-- **CLI Tool**: Run programs with customized environment variables from a `.env` file.
-- **Python API**: Load and manage environment variables programmatically.
-- **Integration**: Easily integrate with frameworks like Django and Flask.
+  - [CLI Usage](#cli-usage)
+  - [Python API](#python-api)
+- [Multiple Profiles](#multiple-profiles)
+- [Framework Integrations](#framework-integrations)
+- [Sample `.env` File](#sample-env-file)
+- [Similar Tools](#similar-tools)
 
 ---
 
-## Getting Started
+## Key Features
+
+- 🚀 **CLI-First**: Use `.env` files across any language or platform.
+- 🐍 **Python-native API**: Load and transform environment settings inside Python.
+- ⚙️ **Multiple Profiles**: Switch easily between `.env.dev`, `.env.prod`, etc.
+- 🧩 **Framework-Friendly**: Works well with Django, Flask, FastAPI, and more.
+
+---
+
+## Quick Start
 
 ### Installation
 
-To install `runenv` along with its CLI tool, run:
-
-```console
+```bash
 pip install runenv
 ```
 
-### Quick CLI Usage
+### CLI Usage
 
-1. Create a `.env` file in your project’s root directory:
+Run any command with a specified environment:
 
-The `.env` file can contain simple key-value pairs, comment lines, and inline comments:
-
-```ini
-# Base settings
-BASE_URL=http://127.0.0.1:8000
-DATABASE_URI=postgres://postgres:password@localhost/dbname
-
-# Email configuration
-EMAIL_HOST=smtp.example.com
-EMAIL_PORT=587  # Port for SMTP
-EMAIL_USER="user@example.com"
-EMAIL_PASSWORD='password'
-EMAIL_USE_TLS=1
-
-# Reusing variables
-EMAIL_FROM=user@${EMAIL_HOST}
+```bash
+runenv .env.dev python manage.py runserver
+runenv .env.prod uvicorn app:app --host 0.0.0.0
 ```
 
-- Variables are set in `KEY=VALUE` pairs.
-- Use `#` for comments.
-- Inline comments are also supported after a `#`.
+View options:
 
-2. Run a command with the environment loaded from the `.env` file:
-
-   ```console
-   runenv .env ./your_command
-   ```
-
-### Python API Overview
-
-You can load environment variables directly in Python:
-
-```python
-from runenv import load_env
-
-# Load variables from the specified .env file
-load_env(".env")
-```
-
-## In-Depth Usage and Examples
-
-### Using the CLI Tool
-
-The `runenv` CLI provides flexibility to run any command with custom environment settings:
-
-```console
-runenv .env.development ./manage.py runserver
-```
-Full help and options:
-
-```console
+```bash
 runenv --help
-usage: runenv [-h] [-V] [-v {1,2,3}] [-p PREFIX] [-s] [--dry-run] env_file command
-
-Run program with given environment file loaded
-
-positional arguments:
-  env_file              Environment file to load
-  command               Command to run with loaded environment
-
-options:
-  -h, --help            show this help message and exit
-  -V, --version         show program's version number and exit
-  -v {1,2,3}, --verbosity {1,2,3}
-                        verbosity level, 1 - (ERROR, default), 2 - (INFO) or 3 - (DEBUG)
-  -p PREFIX, --prefix PREFIX
-                        Load only variables with given prefix
-  -s, --strip-prefix    Strip prefix given with --prefix from environment variables names
-  --dry-run             Return parsed .env instead of running command
 ```
 
-### Python API Details
-
-#### `load_env`
-
-Load variables into the environment:
-
-```python
-load_env(env_file=".env", prefix="DJANGO_", strip_prefix=True, force=False, search_parent=0)
-```
-
-**Parameters:**
-
-- `env_file` (str, optional): The environment file to read from (default is `.env`).
-- `prefix` (str, optional): Load only variables that start with this prefix.
-- `strip_prefix` (bool, optional): If True, removes the prefix from variable names when loaded (default is True).
-- `force` (bool, optional): Force loading the `.env` file again even if already loaded by `runenv` CLI (default is False).
-- `search_parent` (int, optional): Number of parent directories to search for `.env` file (default is 0).
-
-#### `create_env`
-
-Parse `.env` contents into a dictionary without modifying the environment:
-
-```python
-env_vars = create_env(env_file=".env", prefix="APP_", strip_prefix=True)
-print(env_vars)
-```
-
-**Parameters:**
-
-- `env_file` (str, optional): The environment file to read from (default is `.env`).
-- `prefix` (str, optional): Load only variables that start with this prefix.
-- `strip_prefix` (bool, optional): If True, removes the prefix from variable names when loaded (default is True).
-
-### Framework Integration
-
-Easily integrate `runenv` with web frameworks:
-
-```python
-# In Django's manage.py or Flask's app setup
-from runenv import load_env
-load_env(".env")
-```
-
-
-## Similar Projects
-
-- [envdir](https://github.com/jezdez/envdir): Run programs with a modified environment based on files in a directory.
-- [python-dotenv](https://github.com/theskumar/python-dotenv): Reads key-value pairs from `.env` files and adds them to the environment.
+Key CLI features:
+- `--prefix`, `--strip-prefix`: Use selective environments
+- `--dry-run`: Inspect loaded environment
+- `-v`: Verbosity control
 
 ---
 
-With `runenv`, managing environment variables becomes simpler and more consistent, making it easier to develop and deploy applications across different environments.
+## Python API
+
+### Load `.env` into `os.environ`
+
+> **Note**: The `load_env` will not parse env_file if the `runenv` CLI was used, unless you `force=True` it.
+
+```python
+from runenv import load_env
+
+load_env() # loads .env
+load_env(
+    env_file=".env.dev", # file to load
+    prefix='APP_',       # load only APP_.* variables from file
+    strip_prefix=True,   # strip ^ prefix when loading variables
+    force=True,          # load env_file even if the `runvenv` CLI was used
+    search_parent=1      # look for env_file in current dir and its parent dir
+)
+```
+
+### Read `.env` as a dictionary
+
+```python
+from runenv import create_env
+
+config = create_env() # parse .env content into dictionary
+config = create_env(
+    env_file=".env.dev", # file to load
+    prefix='APP_',       # parse only APP_.* variables from file
+    strip_prefix=True,   # strip ^ prefix when parsing variables
+)
+print(config)
+```
+
+Options include:
+- Filtering by prefix
+- Automatic prefix stripping
+- Searching parent directories
+
+---
+
+## Multiple Profiles
+
+Use separate `.env` files per environment:
+
+```bash
+runenv .env.dev flask run
+runenv .env.staging python main.py
+runenv .env.production uvicorn app.main:app
+```
+
+Recommended structure:
+```
+.env.dev
+.env.test
+.env.staging
+.env.production
+```
+
+---
+
+## Framework Integrations
+
+> **Note**: If you're using `runenv .env [./manage.py, ...]` CLI then you do not need change your code. Use these integrations only if you're using Python API.
+
+### Django
+
+```python
+# manage.py or wsgi.py
+from runenv import load_env
+load_env(".env")
+```
+
+### Flask
+
+```python
+from flask import Flask
+from runenv import load_env
+
+load_env(".env")
+app = Flask(__name__)
+```
+
+### FastAPI
+
+```python
+from fastapi import FastAPI
+from runenv import load_env
+
+load_env(".env")
+app = FastAPI()
+```
+
+---
+
+## Sample `.env` File
+
+```ini
+# Basic
+DEBUG=1
+PORT=8000
+
+# Nested variable
+HOST=localhost
+URL=http://${HOST}:${PORT}
+
+# Quotes and comments
+EMAIL="admin@example.com" # Inline comment
+SECRET='s3cr3t'
+```
+
+---
+
+## Similar Tools
+
+- [python-dotenv](https://github.com/theskumar/python-dotenv) – Python-focused, lacks CLI tool
+- [envdir](https://github.com/jezdez/envdir) – Directory-based env manager
+- [dotenv-linter](https://github.com/dotenv-linter/dotenv-linter) – Linter for `.env` files
+
+---
+
+With `runenv`, you get portable, scalable, and explicit configuration management that aligns with modern deployment standards. Ideal for CLI usage, Python projects, and multi-environment pipelines.

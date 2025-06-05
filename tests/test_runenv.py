@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 test_runenv.
 ----------------------------------
@@ -58,6 +57,8 @@ class TestRunenv(unittest.TestCase):
                 del os.environ[k]
 
     def test_create_env(self) -> None:
+        os.environ["ALREADY_SET"] = "YES"
+
         environ = create_env(self.env_file)
         assert environ.get("VARIABLED") == "some_lazy_variable_12"
         assert environ.get("STRING") == "some string with spaces"
@@ -74,6 +75,11 @@ class TestRunenv(unittest.TestCase):
 
         assert "COMMENTED" not in environ
         assert "# COMMENTED" not in environ
+
+        # external variable is not visible
+        assert environ.get("ALREADY_SET", None) is None
+        # but is loaded into our interpolation
+        assert environ.get("FROM_ENV") == "MAYBE-YES"
 
     @pytest.mark.skipif(
         "linux" not in sys.platform,
