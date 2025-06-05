@@ -3,7 +3,7 @@ name = "runenv"
 description = ''
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=2.7"
+requires-python = ">=3.7"
 license = "MIT"
 keywords = []
 authors = [{ name = "Marek Wywiał", email = "onjinx@gmail.com" }]
@@ -16,6 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -35,8 +36,12 @@ devel-test = ["coverage[toml]", "pytest", "pytest-cov"]
 devel-docs = ["mkdocs", "mkdocs-material"]
 devel = [
     "runenv[devel-docs,devel-types,devel-test]",
-    "ruff==0.7.1",
+    "ruff==0.11.12",
     "mkchangelog",
+]
+[dependency-groups]
+dev = [
+    "runenv[devel]",
 ]
 
 ################################################################################
@@ -75,7 +80,7 @@ installer = "uv"
 features = ["devel-test"]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
 
 ################################################################################
 ## PyTest Configuration
@@ -144,8 +149,6 @@ ignore = [
     "D200",   # Require single line docstrings to be on one line.
     "D203",   # Require blank line before class docstring
     "D212",   # Multi-line docstring summary must start at the first line
-    "ANN101", # `self` must be typed
-    "ANN102", # `cls` must be typed
     "FIX002", # Forbid TODO in comments
     "TD002",  # Assign someone to 'TODO' comments
 
@@ -192,3 +195,6 @@ docstring-code-format = true
 [tool.ruff.lint.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.basedpyright]
+pythonVersion = "3.7"
