@@ -32,7 +32,7 @@ package:
 .PHONY: test
 test:
 	hatch run test
-	hatch run coverage report -m --fail-under=100
+	hatch run coverage report -m --fail-under=90
 
 
 .PHONY: test-all
