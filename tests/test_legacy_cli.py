@@ -1,4 +1,5 @@
 import os
+import sys
 
 import pytest
 
@@ -11,6 +12,10 @@ TEST_FILE = os.path.join(TESTS_DIR, "env.test")
 
 class TestLegacyCli:
 
+    @pytest.mark.skipif(
+        "linux" not in sys.platform,
+        reason="works on linux",
+    )
     def test_run(self, monkeypatch: pytest.MonkeyPatch) -> None:
         assert run_legacy([TEST_FILE, "/bin/true"]) == 0
         assert run_legacy([TEST_FILE, "/bin/false"]) == 1

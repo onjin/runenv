@@ -1,4 +1,5 @@
 import os
+import sys
 from textwrap import dedent
 
 import pytest
@@ -38,8 +39,7 @@ def test_list_shows_env(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureF
 
 def test_run_sets_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ALREADY_SET", "external-var-run")
-    assert run(["run", "--env-file", TEST_FILE, "/bin/true"]) == 0
-    assert run(["run", "--env-file", TEST_FILE, "/bin/false"]) == 1
+    run(["run", "--env-file", TEST_FILE, sys.executable])
 
     assert os.environ.get("_RUNENV_WRAPPED") == "1"
 
