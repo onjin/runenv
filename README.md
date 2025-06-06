@@ -38,6 +38,8 @@ Manage application settings with ease using `runenv`, a lightweight tool inspire
 - 🚀 **CLI-First**: Use `.env` files across any language or platform.
 - 🐍 **Python-native API**: Load and transform environment settings inside Python.
 - ⚙️ **Multiple Profiles**: Switch easily between `.env.dev`, `.env.prod`, etc.
+- ⚙️ **Multiple Formats**: Use plain `.env`, `.env.json`, `.env.toml`, or `.env.yaml`
+- ⚙️ **Autodetect Env File**: Looking for `.env`, `.env.json`, `.env.toml`, and `.env.yaml`
 - 🧩 **Framework-Friendly**: Works well with Django, Flask, FastAPI, and more.
 
 ---
@@ -48,6 +50,8 @@ Manage application settings with ease using `runenv`, a lightweight tool inspire
 
 ```bash
 pip install runenv
+pip install runenv[toml] # if you want to use .env.toml in python < 3.11
+pip install runenv[yaml] # if you want to use .env.yaml
 ```
 
 ### CLI Usage
@@ -55,20 +59,11 @@ pip install runenv
 Run any command with a specified environment:
 
 ```bash
-runenv .env.dev python manage.py runserver
-runenv .env.prod uvicorn app:app --host 0.0.0.0
+runenv run --env-file .env.dev -- python manage.py runserver
+runenv run --env-file .env.prod -- uvicorn app:app --host 0.0.0.0
+runenv list [--env-file .env] # view parsed variables
+runenv lint [--env-file .env] # check common errors in env file
 ```
-
-View options:
-
-```bash
-runenv --help
-```
-
-Key CLI features:
-- `--prefix`, `--strip-prefix`: Use selective environments
-- `--dry-run`: Inspect loaded environment
-- `-v`: Verbosity control
 
 ---
 
@@ -83,11 +78,12 @@ from runenv import load_env
 
 load_env() # loads .env
 load_env(
-    env_file=".env.dev", # file to load
-    prefix='APP_',       # load only APP_.* variables from file
-    strip_prefix=True,   # strip ^ prefix when loading variables
-    force=True,          # load env_file even if the `runvenv` CLI was used
-    search_parent=1      # look for env_file in current dir and its parent dir
+    env_file=".env.dev",    # file to load - will be autodetected if not passed
+    prefix='APP_',          # load only APP_.* variables from file
+    strip_prefix=True,      # strip ^ prefix when loading variables
+    force=True,             # load env_file even if the `runvenv` CLI was used
+    search_parent=1,        # look for env_file in current dir and its 1 parent dirs
+    require_env_file=False  # raise error if env file is missing, otherwise just ignore
 )
 ```
 
@@ -98,9 +94,10 @@ from runenv import create_env
 
 config = create_env() # parse .env content into dictionary
 config = create_env(
-    env_file=".env.dev", # file to load
-    prefix='APP_',       # parse only APP_.* variables from file
-    strip_prefix=True,   # strip ^ prefix when parsing variables
+    env_file=".env.dev",    # file to load - will be autodetected if not passed
+    prefix='APP_',          # parse only APP_.* variables from file
+    strip_prefix=True,      # strip ^ prefix when parsing variables
+    search_parent=1,        # look for env_file in current dir and its 1 parent dirs
 )
 print(config)
 ```

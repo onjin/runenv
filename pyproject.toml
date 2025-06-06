@@ -28,9 +28,11 @@ Issues = "https://github.com/onjin/runenv/issues"
 Source = "https://github.com/onjin/runenv"
 
 [project.scripts]
-runenv = "runenv:run"
+runenv = "runenv.cli:run"
 
 [project.optional-dependencies]
+yaml = ["pyyaml"]
+toml = ["tomli; python_version < '3.11'"]
 devel-types = ["mypy"]
 devel-test = ["coverage[toml]", "pytest", "pytest-cov"]
 devel-docs = ["mkdocs", "mkdocs-material"]
@@ -41,6 +43,7 @@ devel = [
 ]
 [dependency-groups]
 dev = [
+    "hatch",
     "runenv[devel]",
 ]
 
@@ -196,5 +199,6 @@ docstring-code-format = true
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
 
-[tool.basedpyright]
+[tool.pyright]
 pythonVersion = "3.7"
+reportUnusedCallResult = false
