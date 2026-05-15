@@ -352,7 +352,10 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         handler = handle_run_subcommand
         env_file = find_env_file(Path.cwd(), args.search_parent, args.env_file)
         if not env_file:
-            fail(f"ERROR!!! Environment file {args.env_file} does not exist", 1)
+            if args.env_file:
+                fail(f"ERROR!!! Environment file `{args.env_file}` does not exist", 1)
+            else:
+                fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
         opts = RunCMDOptions(
             verbosity=args.verbosity,
             env_file=args.env_file,
@@ -367,7 +370,10 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         handler = handle_list_subcommand
         env_file = find_env_file(Path.cwd(), args.search_parent, args.env_file)
         if not env_file:
-            fail(f"ERROR!!! Environment file {args.env_file} does not exist", 1)
+            if args.env_file:
+                fail(f"ERROR!!! Environment file `{args.env_file}` does not exist", 1)
+            else:
+                fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
         opts = ListCMDOptions(
             verbosity=args.verbosity,
             env_file=args.env_file,
@@ -381,7 +387,10 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         handler = handle_lint_subcommand
         env_file = find_env_file(Path.cwd(), args.search_parent, args.env_file)
         if not env_file:
-            fail(f"ERROR!!! Environment file {args.env_file} does not exist", 1)
+            if args.env_file:
+                fail(f"ERROR!!! Environment file `{args.env_file}` does not exist", 1)
+            else:
+                fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
         opts = LintCMDOptions(
             verbosity=args.verbosity,
             env_file=args.env_file,

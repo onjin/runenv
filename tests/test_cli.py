@@ -155,3 +155,33 @@ def test_run_sets_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # external variable is loaded into our interpolation
     assert os.environ.get("FROM_ENV") == "MAYBE-external-var-run"
+
+
+@pytest.mark.parametrize("subcommand", ["run", "list", "lint"])
+def test_missing_explicit_env_file_shows_filename(
+    subcommand: str,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit):
+        run([subcommand, "--env-file", "missing.env", sys.executable] if subcommand == "run" else [subcommand, "--env-file", "missing.env"])
+    out = capsys.readouterr().out
+    assert "missing.env" in out
+    assert "None" not in out
+
+
+@pytest.mark.parametrize("subcommand", ["run", "list", "lint"])
+def test_no_env_file_found_shows_searched_names(
+    subcommand: str,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit):
+        run([subcommand, sys.executable] if subcommand == "run" else [subcommand])
+    out = capsys.readouterr().out
+    assert ".env" in out
+    assert "None" not in out

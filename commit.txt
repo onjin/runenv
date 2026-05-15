@@ -1,10 +1,7 @@
-fix(cli)!: lint exits non-zero on error messages by default
+fix(cli): replace "Environment file None does not exist" with context-aware message
 
-Changes the default --fail-on for the lint subcommand from none to
-error, so runenv lint is usable in CI and pre-commit without extra
-flags. Pass --fail-on=none to restore the previous behaviour.
-
-Lint output (plain text) was also moved from stdout to stderr
-(introduced with the --lint-level/--fail-on flags).
-
-BREAKING CHANGE: runenv lint now exits 1 on error-level messages (default --fail-on=error); plain-text output moved to stderr
+When --env-file is omitted and auto-detection fails, the error now reads
+"No .env / .env.json / .env.toml / .env.yaml found in <cwd>" instead of
+"Environment file None does not exist". When an explicit --env-file is
+given but missing, the filename is shown in backticks. Covers run, list,
+and lint subcommands.
