@@ -1,5 +1,11 @@
-feat: add Python 3.14 support
+docs(parser): document and test ${VAR} fallback to os.environ
 
-Add 3.14 to the CI matrix and pyproject.toml classifiers and hatch test
-matrix. 3.14 is a full release (bugfix status) so no allow-prereleases
-flag is needed.
+The fallback is intentional: env files may reference parent-process
+variables (e.g. HOME, USER) without redeclaring them. Resolution order
+is now documented in the substitute_variables docstring:
+  1. keys from the env file
+  2. os.environ
+  3. empty string (undefined refs expand silently)
+
+Five new tests in TestVariableSubstitution cover all three cases plus
+direct calls to substitute_variables.

@@ -173,13 +173,22 @@ class EnvParser:
 
 
 def substitute_variables(value: str, env_vars: Dict[str, str]) -> str:
-    """
-    Recursively resolve variable references (e.g., ${VAR_NAME}) in a value using env_vars.
+    """Resolve ``${VAR}`` references in *value*.
+
+    Resolution order:
+    1. Keys already parsed from the env file (``env_vars``).
+    2. The caller's ``os.environ`` — allows referencing variables that are
+       set in the shell before ``runenv`` is invoked (e.g. ``HOME``, ``USER``).
+    3. Empty string — undefined references expand silently to ``""``.
+
+    The fallback to ``os.environ`` is intentional: it lets env files reference
+    parent-process state such as ``BASE_URL=${MY_HOST}`` without requiring the
+    variable to be redeclared inside the file.  If you want strict behaviour
+    (error on undefined refs) use ``--strict`` once that flag is implemented.
     """
 
     def replace_match(match: re.Match[str]) -> str:
         var_name = match.group(1)
-        # Resolve variable from env_vars or os.environ
         return str(env_vars.get(var_name, os.environ.get(var_name, "")))
 
     # Replace all occurrences of ${VAR_NAME} in the value

@@ -1,6 +1,6 @@
 import pytest
 
-from runenv.parser import EnvParser, ParseOptions, lint_env_file, parse_env_file
+from runenv.parser import EnvParser, ParseOptions, lint_env_file, parse_env_file, substitute_variables
 
 
 class TestStripPrefixEqualsPrefix:
@@ -85,3 +85,37 @@ class TestStructuredLoaders:
         env_file.write_bytes(b"")
         result = parse_env_file(env_file, ParseOptions())
         assert result == {}
+
+
+class TestVariableSubstitution:
+    def test_var_resolved_from_env_file(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("BASE=hello\nDERIVED=${BASE}_world\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["DERIVED"] == "hello_world"
+
+    def test_var_falls_back_to_os_environ(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("PARENT_VAR", "from-shell")
+        env_file = tmp_path / ".env"
+        env_file.write_text("CHILD=${PARENT_VAR}\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["CHILD"] == "from-shell"
+
+    def test_env_file_var_takes_precedence_over_os_environ(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("MYVAR", "from-shell")
+        env_file = tmp_path / ".env"
+        env_file.write_text("MYVAR=from-file\nCHILD=${MYVAR}\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["CHILD"] == "from-file"
+
+    def test_undefined_var_expands_to_empty_string(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("CHILD=${TOTALLY_UNDEFINED_XYZ}\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["CHILD"] == ""
+
+    def test_substitute_variables_directly(self):
+        env_vars = {"FOO": "bar"}
+        assert substitute_variables("${FOO}", env_vars) == "bar"
+        assert substitute_variables("${MISSING}", env_vars) == ""
+        assert substitute_variables("no-refs", env_vars) == "no-refs"
