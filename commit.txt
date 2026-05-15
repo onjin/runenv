@@ -1,6 +1,7 @@
-fix(cli): catch ValueError from api at CLI boundary
+test: remove dependency on uncommitted .env file in project root
 
-Wraps the subcommand handler dispatch in a try/except ValueError so
-that a "No env file found" raised by create_env or lint_env (e.g. if
-the file disappears after the pre-check) produces a clean error message
-and exit code 1 instead of an unhandled traceback.
+Five tests were referencing PROJECT_DIR/.env (which is gitignored) and
+failing in CI with "Environment file `.env` does not exist". Each test
+now creates its own fixture file via tmp_path. The redundant
+test_root_env_duplicate_key_warning (identical coverage to
+test_duplicate_key_warning_message) is removed.

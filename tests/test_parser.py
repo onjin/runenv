@@ -1,12 +1,6 @@
-import os
-
 import pytest
 
 from runenv.parser import EnvParser, ParseOptions, lint_env_file, parse_env_file
-
-from . import PROJECT_DIR
-
-ROOT_ENV = os.path.join(PROJECT_DIR, ".env")
 
 
 class TestStripPrefixEqualsPrefix:
@@ -30,12 +24,6 @@ class TestDuplicateKey:
         env_file = tmp_path / "test.env"
         env_file.write_text("TEST=3\nTEST=2\n")
         messages = lint_env_file(env_file, ParseOptions())
-        warnings = [m for m in messages if m.level == "warning"]
-        assert len(warnings) >= 1
-        assert any("last value wins" in m.message for m in warnings)
-
-    def test_root_env_duplicate_key_warning(self):
-        messages = lint_env_file(ROOT_ENV, ParseOptions())
         warnings = [m for m in messages if m.level == "warning"]
         assert len(warnings) >= 1
         assert any("last value wins" in m.message for m in warnings)

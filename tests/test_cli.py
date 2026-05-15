@@ -6,10 +6,9 @@ import pytest
 
 from runenv.cli import run
 
-from . import PROJECT_DIR, TESTS_DIR
+from . import TESTS_DIR
 
 TEST_FILE = os.path.join(TESTS_DIR, "env.test")
-ROOT_ENV = os.path.join(PROJECT_DIR, ".env")
 
 
 def test_list_shows_env(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
@@ -64,39 +63,41 @@ def test_run_default_is_silent(
 
 def test_lint_warning_level_shows_warnings_on_stderr(
     capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
 ) -> None:
-    monkeypatch.chdir(PROJECT_DIR)
-    run(["lint", "--env-file", ".env", "--lint-level", "warning"])
+    env_file = tmp_path / ".env"
+    env_file.write_text("TEST=3\nTEST=2\n")
+    run(["lint", "--env-file", str(env_file), "--lint-level", "warning"])
     captured = capsys.readouterr()
     assert "[warning]" in captured.err
 
 
 def test_lint_fail_on_warning_exits_nonzero(
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
 ) -> None:
-    monkeypatch.chdir(PROJECT_DIR)
-    ret = run(["lint", "--env-file", ".env", "--lint-level", "warning", "--fail-on", "warning"])
+    env_file = tmp_path / ".env"
+    env_file.write_text("TEST=3\nTEST=2\n")
+    ret = run(["lint", "--env-file", str(env_file), "--lint-level", "warning", "--fail-on", "warning"])
     assert ret == 1
 
 
 def test_lint_none_level_suppresses_output(
     capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
 ) -> None:
-    monkeypatch.chdir(PROJECT_DIR)
-    run(["lint", "--env-file", ".env", "--lint-level", "none"])
+    env_file = tmp_path / ".env"
+    env_file.write_text("TEST=3\nTEST=2\n")
+    run(["lint", "--env-file", str(env_file), "--lint-level", "none"])
     captured = capsys.readouterr()
     assert captured.err == ""
 
 
 def test_run_fail_on_warning_aborts_before_running(
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
 ) -> None:
-    monkeypatch.chdir(PROJECT_DIR)
-    ret = run(["run", "--env-file", ".env", "--fail-on", "warning", sys.executable])
+    env_file = tmp_path / ".env"
+    env_file.write_text("TEST=3\nTEST=2\n")
+    ret = run(["run", "--env-file", str(env_file), "--fail-on", "warning", sys.executable])
     assert ret == 1
 
 
@@ -110,10 +111,11 @@ def test_lint_exits_nonzero_on_error_by_default(
 
 
 def test_lint_exits_zero_on_warnings_by_default(
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
 ) -> None:
-    monkeypatch.chdir(PROJECT_DIR)
-    ret = run(["lint", "--env-file", ".env"])
+    env_file = tmp_path / ".env"
+    env_file.write_text("TEST=3\nTEST=2\n")
+    ret = run(["lint", "--env-file", str(env_file)])
     assert ret == 0
 
 
