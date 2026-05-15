@@ -1,0 +1,10 @@
+fix(cli)!: lint exits non-zero on error messages by default
+
+Changes the default --fail-on for the lint subcommand from none to
+error, so runenv lint is usable in CI and pre-commit without extra
+flags. Pass --fail-on=none to restore the previous behaviour.
+
+Lint output (plain text) was also moved from stdout to stderr
+(introduced with the --lint-level/--fail-on flags).
+
+BREAKING CHANGE: runenv lint now exits 1 on error-level messages (default --fail-on=error); plain-text output moved to stderr

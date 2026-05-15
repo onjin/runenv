@@ -337,8 +337,8 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
     lint_parser.add_argument(
         "--fail-on",
         choices=["none", "info", "warning", "error"],
-        default="none",
-        help="Minimum message level that causes a non-zero exit (default: none)",
+        default="error",
+        help="Minimum message level that causes a non-zero exit (default: error)",
     )
 
     args = parser.parse_args(argv)

@@ -100,6 +100,23 @@ def test_run_fail_on_warning_aborts_before_running(
     assert ret == 1
 
 
+def test_lint_exits_nonzero_on_error_by_default(
+    tmp_path: pytest.TempPathFactory,
+) -> None:
+    env_file = tmp_path / "test.json"
+    env_file.write_text("[1,2,3]")
+    ret = run(["lint", "--env-file", str(env_file)])
+    assert ret == 1
+
+
+def test_lint_exits_zero_on_warnings_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(PROJECT_DIR)
+    ret = run(["lint", "--env-file", ".env"])
+    assert ret == 0
+
+
 def test_lint_info_level_shows_info_messages(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
