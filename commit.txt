@@ -1,7 +1,8 @@
-test: remove dependency on uncommitted .env file in project root
+fix(ci): replace hatch with uv run pytest; fix Windows subprocess hang
 
-Five tests were referencing PROJECT_DIR/.env (which is gitignored) and
-failing in CI with "Environment file `.env` does not exist". Each test
-now creates its own fixture file via tmp_path. The redundant
-test_root_env_duplicate_key_warning (identical coverage to
-test_duplicate_key_warning_message) is removed.
+- Switch CI from `hatch run test` to `uv run --extra devel-test pytest
+  tests/` to avoid virtualenv incompatibility with Python 3.8/3.9
+  (virtualenv>=20.27.0 dropped propose_interpreters for older Pythons)
+- Fix `test_run_default_is_silent` and `test_run_sets_env` passing bare
+  `sys.executable` to subprocess, which waits on stdin in Windows CI;
+  pass `-c ""` so Python exits immediately

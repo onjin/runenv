@@ -43,8 +43,5 @@ jobs:
           **/pyproject.toml
           **/uv.lock
 
-    - name: Install Hatch
-      run: uv tool install hatch
-
     - name: Run tests
-      run: hatch run test
+      run: uv run --extra devel-test pytest tests/

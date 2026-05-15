@@ -55,7 +55,7 @@ def test_run_default_is_silent(
     env_file = tmp_path / "test.env"
     env_file.write_text("TEST=3\nTEST=2\n")
     monkeypatch.chdir(tmp_path)
-    ret = run(["run", "--env-file", str(env_file), sys.executable])
+    ret = run(["run", "--env-file", str(env_file), sys.executable, "-c", ""])
     captured = capsys.readouterr()
     assert captured.err == ""
     assert ret == 0
@@ -134,7 +134,7 @@ def test_lint_info_level_shows_info_messages(
 
 def test_run_sets_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ALREADY_SET", "external-var-run")
-    run(["run", "--env-file", TEST_FILE, sys.executable])
+    run(["run", "--env-file", TEST_FILE, sys.executable, "-c", ""])
 
     assert os.environ.get("_RUNENV_WRAPPED") == "1"
 
