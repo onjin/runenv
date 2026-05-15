@@ -113,7 +113,7 @@ def run_legacy(argv: Optional[Sequence[str]] = None) -> int:
             sys.stdout.write(f"[legacy] File `{args.command} does not exist\n")
             sys.exit(1)
         if not (stat.S_IXUSR & os.stat(cmd)[stat.ST_MODE]):
-            sys.stdout.write(f"[legacy] File `{args.cmd} is not executable\n")
+            sys.stdout.write(f"[legacy] File `{args.command}` is not executable\n")
             sys.exit(1)
         return subprocess.check_call([cmd] + argv, env=os.environ)  # noqa: RUF005, S603
     except subprocess.CalledProcessError as e:
