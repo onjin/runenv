@@ -95,10 +95,10 @@ def handle_run_subcommand(options: RunCMDOptions) -> Union[int, None]:
 
     try:
         if executable is None or not os.path.exists(executable):
-            fail(f"File `{executable} does not exist", 1)
+            fail(f"File `{executable}` does not exist", 1)
             return 1
         if not (os.stat(executable).st_mode & stat.S_IXUSR):
-            fail(f"File `{executable} is not executable")
+            fail(f"File `{executable}` is not executable")
             return 1
         return subprocess.check_call([executable, *params], env=os.environ)  # noqa: S603
     except subprocess.CalledProcessError as e:
