@@ -19,8 +19,11 @@ from typing import List, Optional, Sequence, Union, cast
 from runenv.__about__ import __version__
 from runenv.api import create_env, find_env_file, lint_env
 from runenv.legacy import run_legacy, run_legacy_parser
+from runenv.parser import ParseMessage
 
 logger = logging.getLogger(__name__)
+
+LEVEL_ORDER = {"none": 0, "info": 1, "warning": 2, "error": 3}
 
 
 def add_stdout_handler(verbosity: int) -> None:
@@ -54,6 +57,8 @@ class RunCMDOptions(CLIOptions):
     strip_prefix: bool
     search_parent: int
     command: List[str]
+    lint_level: str
+    fail_on: str
 
 
 @dataclass
@@ -62,6 +67,8 @@ class ListCMDOptions(CLIOptions):
     prefix: Union[str, None]
     strip_prefix: bool
     search_parent: int
+    lint_level: str
+    fail_on: str
 
 
 @dataclass
@@ -71,6 +78,8 @@ class LintCMDOptions(CLIOptions):
     strip_prefix: bool
     search_parent: int
     as_json: bool
+    lint_level: str
+    fail_on: str
 
 
 def fail(msg: str, returncode: int = 1) -> None:
@@ -78,11 +87,41 @@ def fail(msg: str, returncode: int = 1) -> None:
     sys.exit(returncode)
 
 
+def apply_lint_policy(
+    messages: List[ParseMessage],
+    lint_level: str,
+    fail_on: str,
+    as_json: bool = False,
+) -> int:
+    min_print = LEVEL_ORDER.get(lint_level, 0)
+    min_fail = LEVEL_ORDER.get(fail_on, 0)
+
+    to_show = [m for m in messages if LEVEL_ORDER.get(m.level, 0) >= min_print] if min_print > 0 else []
+    if to_show:
+        if as_json:
+            sys.stdout.write(json.dumps([asdict(m) for m in to_show]))
+        else:
+            for msg in to_show:
+                sys.stderr.write(f"[{msg.level}] (line {msg.line_number}) '{msg.message}'\n")
+
+    if min_fail > 0 and any(LEVEL_ORDER.get(m.level, 0) >= min_fail for m in messages):
+        return 1
+    return 0
+
+
 def handle_run_subcommand(options: RunCMDOptions) -> Union[int, None]:
     cmd = options.command[1:] if options.command and options.command[0] == "--" else options.command[:]
     if not cmd:
         sys.stdout.write("Missing command to execute after 'runenv run -- <command> [params]'\n")
         sys.exit(1)
+
+    if options.lint_level != "none" or options.fail_on != "none":
+        messages = lint_env(
+            options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
+        )
+        rc = apply_lint_policy(messages, options.lint_level, options.fail_on)
+        if rc != 0:
+            return rc
 
     loaded_env = create_env(
         options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
@@ -105,23 +144,28 @@ def handle_run_subcommand(options: RunCMDOptions) -> Union[int, None]:
         return e.returncode
 
 
-def handle_list_subcommand(options: ListCMDOptions) -> None:
+def handle_list_subcommand(options: ListCMDOptions) -> int:
+    if options.lint_level != "none" or options.fail_on != "none":
+        messages = lint_env(
+            options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
+        )
+        rc = apply_lint_policy(messages, options.lint_level, options.fail_on)
+        if rc != 0:
+            return rc
+
     loaded_env = create_env(
         options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
     )
     for key, value in sorted(loaded_env.items()):
         sys.stdout.write(f"{key}={value}\n")
+    return 0
 
 
-def handle_lint_subcommand(options: LintCMDOptions) -> None:
+def handle_lint_subcommand(options: LintCMDOptions) -> int:
     messages = lint_env(
         options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
     )
-    if options.as_json:
-        sys.stdout.write(json.dumps([asdict(m) for m in messages]))
-    else:
-        for msg in messages:
-            sys.stdout.write(f"[{msg.level}] (line {msg.line_number}) '{msg.message}'\n")
+    return apply_lint_policy(messages, options.lint_level, options.fail_on, as_json=options.as_json)
 
 
 def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
@@ -201,6 +245,18 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         default=0,
         help="How many parent dirs search for .env[.json,.toml,.yaml] files; default 0",
     )
+    run_parser.add_argument(
+        "--lint-level",
+        choices=["none", "info", "warning", "error"],
+        default="none",
+        help="Minimum message level to print to stderr (default: none)",
+    )
+    run_parser.add_argument(
+        "--fail-on",
+        choices=["none", "info", "warning", "error"],
+        default="none",
+        help="Minimum message level that causes a non-zero exit before running the command (default: none)",
+    )
 
     # --- list command ---
     list_parser = subparsers.add_parser("list", help="List parsed variables")
@@ -227,6 +283,18 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         type=int,
         default=0,
         help="How many parent dirs search for .env[.json,.toml,.yaml] files; default 0",
+    )
+    list_parser.add_argument(
+        "--lint-level",
+        choices=["none", "info", "warning", "error"],
+        default="none",
+        help="Minimum message level to print to stderr (default: none)",
+    )
+    list_parser.add_argument(
+        "--fail-on",
+        choices=["none", "info", "warning", "error"],
+        default="none",
+        help="Minimum message level that causes a non-zero exit before listing (default: none)",
     )
 
     # --- lint command ---
@@ -260,6 +328,18 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         action="store_true",
         help="Return json instead log lines",
     )
+    lint_parser.add_argument(
+        "--lint-level",
+        choices=["none", "info", "warning", "error"],
+        default="info",
+        help="Minimum message level to print (default: info)",
+    )
+    lint_parser.add_argument(
+        "--fail-on",
+        choices=["none", "info", "warning", "error"],
+        default="none",
+        help="Minimum message level that causes a non-zero exit (default: none)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -280,6 +360,8 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
             strip_prefix=args.strip_prefix,
             search_parent=args.search_parent,
             command=args.command,
+            lint_level=args.lint_level,
+            fail_on=args.fail_on,
         )
     elif subcommand == "list":
         handler = handle_list_subcommand
@@ -292,6 +374,8 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
             prefix=args.prefix,
             strip_prefix=args.strip_prefix,
             search_parent=args.search_parent,
+            lint_level=args.lint_level,
+            fail_on=args.fail_on,
         )
     elif subcommand == "lint":
         handler = handle_lint_subcommand
@@ -305,6 +389,8 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
             strip_prefix=args.strip_prefix,
             search_parent=args.search_parent,
             as_json=args.as_json,
+            lint_level=args.lint_level,
+            fail_on=args.fail_on,
         )
     else:
         parser.error("Unknown subcommand")
