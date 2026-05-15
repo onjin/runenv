@@ -155,7 +155,7 @@ class EnvParser:
             try:
                 import tomli
             except ImportError:
-                sys.stderr.write("ERROR!!! To use YAML install runenv[toml]\n")
+                sys.stderr.write("ERROR!!! To use TOML install runenv[toml]\n")
                 sys.exit(1)
         environ: List[Tuple[int, str, str]] = []
         with open(env_file, "rb") as f:
