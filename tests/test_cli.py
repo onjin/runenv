@@ -197,3 +197,27 @@ def test_no_env_file_found_shows_searched_names(
     out = capsys.readouterr().out
     assert ".env" in out
     assert "None" not in out
+
+
+def test_value_error_from_api_caught_at_cli_boundary(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import runenv.cli as cli_module
+
+    env_file = tmp_path / ".env"
+    env_file.write_text("FOO=bar\n")
+    monkeypatch.chdir(tmp_path)
+
+    def _raise(*args, **kwargs):
+        raise ValueError("No env file found")
+
+    monkeypatch.setattr(cli_module, "create_env", _raise)
+
+    with pytest.raises(SystemExit) as exc_info:
+        run(["list", "--env-file", str(env_file)])
+
+    assert exc_info.value.code == 1
+    out = capsys.readouterr().out
+    assert "No env file found" in out

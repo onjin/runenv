@@ -407,4 +407,8 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         )
     else:
         parser.error("Unknown subcommand")
-    return handler(opts)
+    try:
+        return handler(opts)
+    except ValueError as e:
+        fail(str(e), 1)
+        return 1

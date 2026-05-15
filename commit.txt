@@ -1,4 +1,6 @@
-fix(cli): print help instead of error when runenv is called with no subcommand
+fix(cli): catch ValueError from api at CLI boundary
 
-Bare `runenv` (no args, no legacy env file) now prints --help and exits 0
-instead of crashing with "Unknown subcommand".
+Wraps the subcommand handler dispatch in a try/except ValueError so
+that a "No env file found" raised by create_env or lint_env (e.g. if
+the file disappears after the pre-check) produces a clean error message
+and exit code 1 instead of an unhandled traceback.
