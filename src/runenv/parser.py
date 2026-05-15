@@ -49,8 +49,7 @@ class EnvParser:
         environ = loader(env_file)
         # skip not prefixed if prefix used
         for line_number, key, value in environ:
-            if self.options.prefix and key != self.options.prefix and not key.startswith(self.options.prefix):
-
+            if self.options.prefix and (not key.startswith(self.options.prefix) or key == self.options.prefix):
                 msg = f"skip {key} without prefix {self.options.prefix}"
                 logger.debug(msg)
                 self.messages.append(
@@ -61,7 +60,7 @@ class EnvParser:
                     )
                 )
                 continue
-            if self.options.prefix and key != self.options.prefix and self.options.strip_prefix:
+            if self.options.prefix and self.options.strip_prefix:
                 logger.debug("strip %s without prefix %s", key, self.options.prefix)
                 key = key[len(self.options.prefix) :]
 
