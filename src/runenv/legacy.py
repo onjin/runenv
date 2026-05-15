@@ -78,6 +78,12 @@ def run_legacy_parser(
         action="store_true",
         help="Return parsed .env instead of running command",
     )
+    parser.add_argument(
+        "--search-parent",
+        type=int,
+        default=0,
+        help="How many parent dirs search for .env[.json,.toml,.yaml] files; default 0",
+    )
 
     return parser.parse_known_args(argv)
 
@@ -94,7 +100,7 @@ def run_legacy(argv: Optional[Sequence[str]] = None) -> int:
     add_stdout_handler(int(args.verbosity))
     logger.debug("args: %s", args)
 
-    loaded_env = create_env(args.env_file, prefix=args.prefix, strip_prefix=args.strip_prefix)
+    loaded_env = create_env(args.env_file, prefix=args.prefix, strip_prefix=args.strip_prefix, search_parent=args.search_parent)
     loaded_env["_RUNENV_WRAPPED"] = "1"
 
     if args.dry_run:
