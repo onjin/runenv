@@ -1,8 +1,5 @@
-fix(ci): replace hatch with uv run pytest; fix Windows subprocess hang
+feat: add Python 3.14 support
 
-- Switch CI from `hatch run test` to `uv run --extra devel-test pytest
-  tests/` to avoid virtualenv incompatibility with Python 3.8/3.9
-  (virtualenv>=20.27.0 dropped propose_interpreters for older Pythons)
-- Fix `test_run_default_is_silent` and `test_run_sets_env` passing bare
-  `sys.executable` to subprocess, which waits on stdin in Windows CI;
-  pass `-c ""` so Python exits immediately
+Add 3.14 to the CI matrix and pyproject.toml classifiers and hatch test
+matrix. 3.14 is a full release (bugfix status) so no allow-prereleases
+flag is needed.
