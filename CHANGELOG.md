@@ -28,7 +28,11 @@
 
 ### Chore
 
-- update CHANGELOG.md 
+- bump version to 1.4.0 
+
+### Test
+
+- remove dependency on uncommitted .env file in project root 
 
 ## v1.3.0 (2025-06-05)
 
