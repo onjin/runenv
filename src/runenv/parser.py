@@ -124,14 +124,29 @@ class EnvParser:
 
         return environ
 
-    def load_json_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
+    def _check_structured_root(self, data: object, fmt: str) -> Dict[str, object]:
+        if data is None:
+            return {}
+        if not isinstance(data, dict):
+            msg = f"{fmt} root must be a mapping, got {type(data).__name__}"
+            self.messages.append(ParseMessage(line_number=1, level="error", message=msg))
+            raise ValueError(msg)
+        return data  # type: ignore[return-value]
+
+    def _iter_structured(self, data: Dict[str, object], fmt: str) -> List[Tuple[int, str, str]]:
         environ: List[Tuple[int, str, str]] = []
-        with open(env_file) as f:
-            line_number = 1
-            for key, value in json.loads(f.read()).items():
-                environ.append((line_number, key, value))
-                line_number += 1
+        for line_number, (key, value) in enumerate(data.items(), start=1):
+            if value is None:
+                msg = f"'{key}' has null value, using empty string"
+                self.messages.append(ParseMessage(line_number=line_number, level="warning", message=msg))
+                value = ""
+            environ.append((line_number, key, value))
         return environ
+
+    def load_json_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
+        with open(env_file) as f:
+            data = json.loads(f.read())
+        return self._iter_structured(self._check_structured_root(data, "JSON"), "JSON")
 
     def load_yaml_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
         try:
@@ -139,13 +154,9 @@ class EnvParser:
         except ImportError:
             sys.stderr.write("ERROR!!! To use YAML install runenv[yaml]\n")
             sys.exit(1)
-        environ: List[Tuple[int, str, str]] = []
         with open(env_file, "r") as f:
-            line_number = 1
-            for key, value in yaml.safe_load(f.read()).items():
-                environ.append((line_number, key, value))
-                line_number += 1
-        return environ
+            data = yaml.safe_load(f.read())
+        return self._iter_structured(self._check_structured_root(data, "YAML"), "YAML")
 
     def load_toml_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
         if sys.version_info >= (3, 11):
@@ -156,13 +167,9 @@ class EnvParser:
             except ImportError:
                 sys.stderr.write("ERROR!!! To use TOML install runenv[toml]\n")
                 sys.exit(1)
-        environ: List[Tuple[int, str, str]] = []
         with open(env_file, "rb") as f:
-            line_number = 1
-            for key, value in tomli.load(f).items():
-                environ.append((line_number, key, value))
-                line_number += 1
-        return environ
+            data = tomli.load(f)
+        return self._iter_structured(self._check_structured_root(data, "TOML"), "TOML")
 
 
 def substitute_variables(value: str, env_vars: Dict[str, str]) -> str:
@@ -185,4 +192,9 @@ def parse_env_file(env_file: Union[str, Path], options: ParseOptions) -> Dict[st
 
 
 def lint_env_file(env_file: Union[str, Path], options: ParseOptions) -> List[ParseMessage]:
-    return EnvParser(options).parse(env_file).messages
+    parser = EnvParser(options)
+    try:
+        parser.parse(env_file)
+    except ValueError:
+        pass
+    return parser.messages
