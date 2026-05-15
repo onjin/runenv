@@ -1,7 +1,4 @@
-fix(cli): replace "Environment file None does not exist" with context-aware message
+fix(cli): print help instead of error when runenv is called with no subcommand
 
-When --env-file is omitted and auto-detection fails, the error now reads
-"No .env / .env.json / .env.toml / .env.yaml found in <cwd>" instead of
-"Environment file None does not exist". When an explicit --env-file is
-given but missing, the filename is shown in backticks. Covers run, list,
-and lint subcommands.
+Bare `runenv` (no args, no legacy env file) now prints --help and exits 0
+instead of crashing with "Unknown subcommand".

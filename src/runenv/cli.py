@@ -348,6 +348,10 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
     logger.debug("args: %s", args)
     subcommand: str = args.subcommand
 
+    if subcommand is None:
+        parser.print_help()
+        return 0
+
     if subcommand == "run":
         handler = handle_run_subcommand
         env_file = find_env_file(Path.cwd(), args.search_parent, args.env_file)

@@ -172,6 +172,18 @@ def test_missing_explicit_env_file_shows_filename(
     assert "None" not in out
 
 
+def test_bare_runenv_prints_help(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    rc = run([])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "usage" in out.lower()
+
+
 @pytest.mark.parametrize("subcommand", ["run", "list", "lint"])
 def test_no_env_file_found_shows_searched_names(
     subcommand: str,
