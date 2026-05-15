@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: MIT
 __author__ = "Marek Wywiał"
 __email__ = "onjinx@gmail.com"
-__version__ = "1.3.0"
+__version__ = "1.3.1"
