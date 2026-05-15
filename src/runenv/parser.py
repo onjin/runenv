@@ -65,12 +65,12 @@ class EnvParser:
                 key = key[len(self.options.prefix) :]
 
             if key in self.raw_environ:
-                msg = f"duplicated '{key}' variable"
+                msg = f"duplicated '{key}' variable, last value wins"
                 logger.debug(msg)
                 self.messages.append(
                     ParseMessage(
                         line_number=line_number,
-                        level="error",
+                        level="warning",
                         message=msg,
                     )
                 )

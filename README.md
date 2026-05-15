@@ -28,6 +28,7 @@ Manage application settings with ease using `runenv`, a lightweight tool inspire
   - [Python API](#python-api)
 - [Multiple Profiles](#multiple-profiles)
 - [Framework Integrations](#framework-integrations)
+- [Parsing Behaviour](#parsing-behaviour)
 - [Sample `.env` File](#sample-env-file)
 - [Similar Tools](#similar-tools)
 
@@ -160,6 +161,18 @@ from runenv import load_env
 load_env(".env")
 app = FastAPI()
 ```
+
+---
+
+## Parsing Behaviour
+
+| Situation | Behaviour |
+|-----------|-----------|
+| Duplicate key | Last definition wins; a `warning` is emitted by `lint` |
+| Key exactly equal to `--prefix` | Skipped (stripping would produce an empty name) |
+| Key without matching prefix | Skipped and reported as `info` by `lint` |
+
+Duplicate keys are **not** an error — the last value in the file takes effect, matching the behaviour of most shell `.env` loaders. Use `runenv lint` to surface duplicates as warnings before they reach production.
 
 ---
 
