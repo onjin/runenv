@@ -7,13 +7,51 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
 # Regular expression to match variable references like ${VAR_NAME}
 VARIABLE_LINE_REGEX = re.compile(r'^\s*([\w.]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\n#]*?))\s*(?:#.*)?$')
 VARIABLE_REFERENCE_REGEX = re.compile(r"\$\{(\w+)\}")
+
+
+def _json_line_numbers(content: str, keys: Iterable[str]) -> Dict[str, int]:
+    lines = content.splitlines()
+    result: Dict[str, int] = {}
+    for key in keys:
+        pattern = re.compile(r'"' + re.escape(key) + r'"\s*:')
+        for i, line in enumerate(lines, 1):
+            if pattern.search(line):
+                result[key] = i
+                break
+    return result
+
+
+def _toml_line_numbers(content: str, keys: Iterable[str]) -> Dict[str, int]:
+    lines = content.splitlines()
+    result: Dict[str, int] = {}
+    for key in keys:
+        pattern = re.compile(r'^\s*' + re.escape(key) + r'\s*=')
+        for i, line in enumerate(lines, 1):
+            if pattern.match(line):
+                result[key] = i
+                break
+    return result
+
+
+def _yaml_line_numbers(content: str) -> Dict[str, int]:
+    try:
+        import yaml
+    except ImportError:
+        return {}
+    node = yaml.compose(content)
+    if not isinstance(node, yaml.MappingNode):
+        return {}
+    result: Dict[str, int] = {}
+    for key_node, _ in node.value:
+        result[str(key_node.value)] = key_node.start_mark.line + 1
+    return result
 
 
 @dataclass
@@ -167,20 +205,28 @@ class EnvParser:
             raise ValueError(msg)
         return data  # type: ignore[return-value]
 
-    def _iter_structured(self, data: Dict[str, object], fmt: str) -> List[Tuple[int, str, str]]:
+    def _iter_structured(
+        self,
+        data: Dict[str, object],
+        fmt: str,
+        line_numbers: Optional[Dict[str, int]] = None,
+    ) -> List[Tuple[int, str, str]]:
         environ: List[Tuple[int, str, str]] = []
-        for line_number, (key, value) in enumerate(data.items(), start=1):
+        for seq_num, (key, value) in enumerate(data.items(), start=1):
+            ln = line_numbers.get(key, seq_num) if line_numbers is not None else seq_num
             if value is None:
                 msg = f"'{key}' has null value, using empty string"
-                self.messages.append(ParseMessage(line_number=line_number, level="warning", message=msg))
+                self.messages.append(ParseMessage(line_number=ln, level="warning", message=msg))
                 value = ""
-            environ.append((line_number, key, value))
+            environ.append((ln, key, value))
         return environ
 
     def load_json_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
         with open(env_file) as f:
-            data = json.loads(f.read())
-        return self._iter_structured(self._check_structured_root(data, "JSON"), "JSON")
+            content = f.read()
+        data = json.loads(content)
+        root = self._check_structured_root(data, "JSON")
+        return self._iter_structured(root, "JSON", _json_line_numbers(content, root.keys()))
 
     def load_yaml_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
         try:
@@ -189,8 +235,10 @@ class EnvParser:
             sys.stderr.write("ERROR!!! To use YAML install runenv[yaml]\n")
             sys.exit(1)
         with open(env_file, "r") as f:
-            data = yaml.safe_load(f.read())
-        return self._iter_structured(self._check_structured_root(data, "YAML"), "YAML")
+            content = f.read()
+        data = yaml.safe_load(content)
+        root = self._check_structured_root(data, "YAML")
+        return self._iter_structured(root, "YAML", _yaml_line_numbers(content))
 
     def load_toml_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
         if sys.version_info >= (3, 11):
@@ -202,8 +250,11 @@ class EnvParser:
                 sys.stderr.write("ERROR!!! To use TOML install runenv[toml]\n")
                 sys.exit(1)
         with open(env_file, "rb") as f:
-            data = tomli.load(f)
-        return self._iter_structured(self._check_structured_root(data, "TOML"), "TOML")
+            raw = f.read()
+        content = raw.decode("utf-8")
+        data = tomli.loads(content)
+        root = self._check_structured_root(data, "TOML")
+        return self._iter_structured(root, "TOML", _toml_line_numbers(content, root.keys()))
 
 
 def substitute_variables(value: str, env_vars: Dict[str, str]) -> str:

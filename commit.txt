@@ -1,8 +1,6 @@
-feat(parser): detect circular ${VAR} references and report in lint
+fix(parser): preserve real source line numbers for JSON/TOML/YAML loaders
 
-Adds DFS-based cycle detection to EnvParser after raw_environ is built.
-Each unique cycle emits a warning-level ParseMessage so runenv lint
-catches A=${B} / B=${A} patterns. Parsing still completes (circular
-vars resolve to their literal ${VAR} form). Five new tests cover direct
-cycles, self-references, longer chains, clean files, and parse
-resilience.
+Replace the sequential key counter with actual file line numbers in
+structured format loaders. JSON and TOML use a regex text-scan to find
+each key's position; YAML uses yaml.compose() which exposes per-node
+start_mark line offsets. Lint messages now point at real source lines.

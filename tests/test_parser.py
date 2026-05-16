@@ -1,6 +1,15 @@
 import pytest
 
-from runenv.parser import EnvParser, ParseOptions, lint_env_file, parse_env_file, substitute_variables
+from runenv.parser import (
+    EnvParser,
+    ParseOptions,
+    _json_line_numbers,
+    _toml_line_numbers,
+    _yaml_line_numbers,
+    lint_env_file,
+    parse_env_file,
+    substitute_variables,
+)
 
 
 class TestStripPrefixEqualsPrefix:
@@ -85,6 +94,53 @@ class TestStructuredLoaders:
         env_file.write_bytes(b"")
         result = parse_env_file(env_file, ParseOptions())
         assert result == {}
+
+
+class TestStructuredLoaderLineNumbers:
+    def test_json_null_value_warning_has_real_line_number(self, tmp_path):
+        env_file = tmp_path / "test.json"
+        env_file.write_text('{\n  "A": "hello",\n  "B": null,\n  "C": "world"\n}')
+        messages = lint_env_file(env_file, ParseOptions())
+        null_warnings = [m for m in messages if "null value" in m.message]
+        assert len(null_warnings) == 1
+        assert null_warnings[0].line_number == 3
+
+    def test_yaml_null_value_warning_has_real_line_number(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("A: hello\nB: ~\nC: world\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        null_warnings = [m for m in messages if "null value" in m.message]
+        assert len(null_warnings) == 1
+        assert null_warnings[0].line_number == 2
+
+    def test_toml_prefix_skip_has_real_line_number(self, tmp_path):
+        env_file = tmp_path / "test.toml"
+        env_file.write_text('APP_FOO = "bar"\nAPP_BAR = "baz"\nOTHER = "x"\n')
+        messages = lint_env_file(env_file, ParseOptions(prefix="APP_"))
+        skip_infos = [m for m in messages if "skip OTHER" in m.message]
+        assert len(skip_infos) == 1
+        assert skip_infos[0].line_number == 3
+
+    def test_json_line_numbers_helper(self):
+        content = '{\n  "FOO": "bar",\n  "BAZ": 42\n}'
+        result = _json_line_numbers(content, ["FOO", "BAZ"])
+        assert result == {"FOO": 2, "BAZ": 3}
+
+    def test_toml_line_numbers_helper(self):
+        content = 'FOO = "bar"\nBAZ = 42\n'
+        result = _toml_line_numbers(content, ["FOO", "BAZ"])
+        assert result == {"FOO": 1, "BAZ": 2}
+
+    def test_yaml_line_numbers_helper(self):
+        content = "FOO: bar\nBAZ: 42\n"
+        result = _yaml_line_numbers(content)
+        assert result == {"FOO": 1, "BAZ": 2}
+
+    def test_yaml_line_numbers_empty_returns_empty(self):
+        assert _yaml_line_numbers("") == {}
+
+    def test_yaml_line_numbers_non_mapping_returns_empty(self):
+        assert _yaml_line_numbers("- foo\n- bar\n") == {}
 
 
 class TestVariableSubstitution:
