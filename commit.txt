@@ -1,11 +1,8 @@
-docs(parser): document and test ${VAR} fallback to os.environ
+feat(parser): detect circular ${VAR} references and report in lint
 
-The fallback is intentional: env files may reference parent-process
-variables (e.g. HOME, USER) without redeclaring them. Resolution order
-is now documented in the substitute_variables docstring:
-  1. keys from the env file
-  2. os.environ
-  3. empty string (undefined refs expand silently)
-
-Five new tests in TestVariableSubstitution cover all three cases plus
-direct calls to substitute_variables.
+Adds DFS-based cycle detection to EnvParser after raw_environ is built.
+Each unique cycle emits a warning-level ParseMessage so runenv lint
+catches A=${B} / B=${A} patterns. Parsing still completes (circular
+vars resolve to their literal ${VAR} form). Five new tests cover direct
+cycles, self-references, longer chains, clean files, and parse
+resilience.

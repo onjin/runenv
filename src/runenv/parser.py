@@ -7,7 +7,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -76,10 +76,44 @@ class EnvParser:
                 )
             self.raw_environ[key] = value
 
-        # Perform lazy evaluation after parsing all variables
+        self._find_cycles()
         for key, value in self.raw_environ.items():
             self.final_environ[key] = substitute_variables(value, self.raw_environ)
         return self
+
+    def _find_cycles(self) -> None:
+        deps: Dict[str, Set[str]] = {
+            key: set(VARIABLE_REFERENCE_REGEX.findall(value)) & self.raw_environ.keys()
+            for key, value in self.raw_environ.items()
+        }
+
+        WHITE, GRAY, BLACK = 0, 1, 2
+        colors: Dict[str, int] = {k: WHITE for k in deps}
+        reported: Set[frozenset] = set()
+        path: List[str] = []
+
+        def dfs(node: str) -> None:
+            colors[node] = GRAY
+            path.append(node)
+            for neighbor in sorted(deps.get(node, set())):
+                if colors.get(neighbor) == GRAY:
+                    cycle = path[path.index(neighbor):]
+                    cycle_key: frozenset = frozenset(cycle)
+                    if cycle_key not in reported:
+                        reported.add(cycle_key)
+                        self.messages.append(ParseMessage(
+                            line_number=0,
+                            level="warning",
+                            message="circular reference: " + " -> ".join(cycle + [neighbor]),
+                        ))
+                elif colors.get(neighbor, WHITE) == WHITE:
+                    dfs(neighbor)
+            path.pop()
+            colors[node] = BLACK
+
+        for node in sorted(deps.keys()):
+            if colors[node] == WHITE:
+                dfs(node)
 
     def load_env_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
         environ: List[Tuple[int, str, str]] = []

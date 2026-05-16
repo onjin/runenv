@@ -119,3 +119,42 @@ class TestVariableSubstitution:
         assert substitute_variables("${FOO}", env_vars) == "bar"
         assert substitute_variables("${MISSING}", env_vars) == ""
         assert substitute_variables("no-refs", env_vars) == "no-refs"
+
+
+class TestCircularReferences:
+    def test_direct_cycle_reported_as_warning(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("A=${B}\nB=${A}\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        warnings = [m for m in messages if m.level == "warning" and "circular" in m.message]
+        assert len(warnings) == 1
+        assert "A" in warnings[0].message
+        assert "B" in warnings[0].message
+
+    def test_self_reference_reported_as_warning(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("A=${A}\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        warnings = [m for m in messages if m.level == "warning" and "circular" in m.message]
+        assert len(warnings) == 1
+        assert "A" in warnings[0].message
+
+    def test_longer_cycle_reported(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("A=${B}\nB=${C}\nC=${A}\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        warnings = [m for m in messages if m.level == "warning" and "circular" in m.message]
+        assert len(warnings) == 1
+
+    def test_no_cycle_produces_no_warning(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("BASE=hello\nDERIVED=${BASE}_world\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        circular = [m for m in messages if "circular" in m.message]
+        assert circular == []
+
+    def test_parse_still_succeeds_despite_cycle(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("A=${B}\nB=${A}\nSAFE=ok\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["SAFE"] == "ok"
