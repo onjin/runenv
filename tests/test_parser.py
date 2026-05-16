@@ -13,6 +13,26 @@ from runenv.parser import (
 )
 
 
+class TestQuotedValues:
+    def test_double_quoted_value_parsed_without_quotes(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="hello world"\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "hello world"
+
+    def test_single_quoted_value_parsed_without_quotes(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY='hello world'\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "hello world"
+
+    def test_unquoted_value_unchanged(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=hello\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "hello"
+
+
 class TestStripPrefixEqualsPrefix:
     def test_key_equal_to_prefix_is_skipped(self, tmp_path):
         env_file = tmp_path / "test.env"

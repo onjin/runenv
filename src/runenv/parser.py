@@ -178,15 +178,7 @@ class EnvParser:
 
                 if match:
                     key = match.group(1)
-                    # Only one of groups 2, 3, or 4 will contain the value
                     value = next(g for g in match.groups()[1:] if g is not None)
-
-                    # Strip quotes if they exist
-                    if (value.startswith('"') and value.endswith('"')) or (
-                        value.startswith("'") and value.endswith("'")
-                    ):
-                        value = value[1:-1]
-
                     environ.append((line_number, key, value))
 
                 else:
