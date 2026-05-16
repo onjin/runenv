@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 # Regular expression to match variable references like ${VAR_NAME}
 VARIABLE_LINE_REGEX = re.compile(r'^\s*([\w.]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\n#]*?))\s*(?:#.*)?$')
 VARIABLE_REFERENCE_REGEX = re.compile(r"\$\{(\w+)\}")
+POSIX_NAME_REGEX = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
 
 def _json_line_numbers(content: str, keys: Iterable[str]) -> Dict[str, int]:
@@ -107,6 +108,17 @@ class EnvParser:
             if self.options.prefix and self.options.strip_prefix:
                 logger.debug("strip %s without prefix %s", key, self.options.prefix)
                 key = key[len(self.options.prefix) :]
+
+            if not POSIX_NAME_REGEX.match(key):
+                msg = f"'{key}' is not a valid POSIX env var name"
+                logger.debug(msg)
+                self.messages.append(
+                    ParseMessage(
+                        line_number=line_number,
+                        level="warning",
+                        message=msg,
+                    )
+                )
 
             if key in self.raw_environ:
                 msg = f"duplicated '{key}' variable, last value wins"

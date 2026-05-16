@@ -13,6 +13,50 @@ from runenv.parser import (
 )
 
 
+class TestPosixNameValidation:
+    def test_dotted_key_warns(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("app.debug=1\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        warnings = [m for m in messages if "POSIX" in m.message]
+        assert len(warnings) == 1
+        assert "app.debug" in warnings[0].message
+
+    def test_digit_leading_key_warns(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("1FOO=bar\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        warnings = [m for m in messages if "POSIX" in m.message]
+        assert len(warnings) == 1
+
+    def test_valid_key_no_warning(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("FOO=bar\n_FOO=baz\nFOO_123=qux\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        assert not any("POSIX" in m.message for m in messages)
+
+    def test_dotted_key_still_loaded(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("app.debug=1\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["app.debug"] == "1"
+
+    def test_json_dotted_key_warns(self, tmp_path):
+        env_file = tmp_path / "test.json"
+        env_file.write_text('{"app.debug": "1"}')
+        messages = lint_env_file(env_file, ParseOptions())
+        warnings = [m for m in messages if "POSIX" in m.message]
+        assert len(warnings) == 1
+
+    def test_posix_warning_checked_after_prefix_strip(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("APP_foo.bar=1\n")
+        messages = lint_env_file(env_file, ParseOptions(prefix="APP_", strip_prefix=True))
+        warnings = [m for m in messages if "POSIX" in m.message]
+        assert len(warnings) == 1
+        assert "foo.bar" in warnings[0].message
+
+
 class TestQuotedValues:
     def test_double_quoted_value_parsed_without_quotes(self, tmp_path):
         env_file = tmp_path / ".env"
