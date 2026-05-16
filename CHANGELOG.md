@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.4.1 (2026-05-16)
+
+### Features
+
+- add Python 3.14 support 
+- **parser:** warn on non-POSIX env var names (dots, digit-leading, etc.) 
+- **parser:** detect circular ${VAR} references and report in lint 
+
+### Fixes
+
+- **ci:** replace hatch with uv run pytest; fix Windows subprocess hang 
+- **parser:** normalize bool values to "true"/"false" in structured loaders 
+- **parser:** preserve real source line numbers for JSON/TOML/YAML loaders 
+
+### Refactors
+
+- **parser:** remove dead quote-stripping code in load_env_file 
+
+### Docs
+
+- **parser:** document and test ${VAR} fallback to os.environ The fallback is intentional: env files may reference parent-process
+
+### Test
+
+- fix test isolation and remove hardcoded /bin/true path dependency 
+
 ## v1.4.0 (2026-05-15)
 
 ### ⚠ BREAKING CHANGES
