@@ -110,6 +110,12 @@ class TestStructuredLoaders:
         with pytest.raises(Exception):
             parse_env_file(env_file, ParseOptions())
 
+    def test_malformed_json_raises_exception(self, tmp_path):
+        env_file = tmp_path / "test.json"
+        env_file.write_text("{invalid json}")
+        with pytest.raises(Exception):
+            parse_env_file(env_file, ParseOptions())
+
     def test_json_null_root_returns_empty_dict(self, tmp_path):
         env_file = tmp_path / "test.json"
         env_file.write_text("null")
@@ -136,6 +142,12 @@ class TestStructuredLoaders:
         assert len(warnings) >= 1
         assert any("null value" in m.message for m in warnings)
 
+    def test_json_string_value_is_unchanged(self, tmp_path):
+        env_file = tmp_path / "test.json"
+        env_file.write_text('{"HOST": "localhost"}')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["HOST"] == "localhost"
+
     def test_empty_yaml_returns_empty_dict(self, tmp_path):
         env_file = tmp_path / "test.yaml"
         env_file.write_text("")
@@ -154,11 +166,92 @@ class TestStructuredLoaders:
         result = parse_env_file(env_file, ParseOptions())
         assert result["KEY"] == ""
 
+    def test_yaml_null_keyword_becomes_empty_string(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("KEY: null\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == ""
+
+    def test_yaml_tilde_null_becomes_empty_string(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("KEY: ~\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == ""
+
+    def test_yaml_null_value_lint_warning(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("KEY: null\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        assert any("null value" in m.message for m in messages if m.level == "warning")
+
+    def test_yaml_folded_multiline_becomes_string(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("KEY: >\n  hello\n  world\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert "KEY" in result
+        assert "hello" in result["KEY"]
+
+    def test_yaml_literal_multiline_becomes_string(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("KEY: |\n  hello\n  world\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert "KEY" in result
+        assert "hello" in result["KEY"]
+
+    def test_yaml_string_value_is_unchanged(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("HOST: localhost\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["HOST"] == "localhost"
+
     def test_empty_toml_returns_empty_dict(self, tmp_path):
         env_file = tmp_path / "test.toml"
         env_file.write_bytes(b"")
         result = parse_env_file(env_file, ParseOptions())
         assert result == {}
+
+    def test_malformed_toml_raises_exception(self, tmp_path):
+        env_file = tmp_path / "test.toml"
+        env_file.write_bytes(b"[invalid\n")
+        with pytest.raises(Exception):
+            parse_env_file(env_file, ParseOptions())
+
+    def test_toml_string_value_is_unchanged(self, tmp_path):
+        env_file = tmp_path / "test.toml"
+        env_file.write_text('HOST = "localhost"\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["HOST"] == "localhost"
+
+    def test_toml_int_becomes_string(self, tmp_path):
+        env_file = tmp_path / "test.toml"
+        env_file.write_text("PORT = 8080\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["PORT"] == "8080"
+
+    def test_toml_float_becomes_string(self, tmp_path):
+        env_file = tmp_path / "test.toml"
+        env_file.write_text("RATE = 1.5\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["RATE"] == "1.5"
+
+    def test_toml_datetime_becomes_string(self, tmp_path):
+        env_file = tmp_path / "test.toml"
+        env_file.write_text("CREATED = 2024-05-16T12:00:00\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert "CREATED" in result
+        assert "2024" in result["CREATED"]
+
+    def test_yaml_int_becomes_string(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("PORT: 8080\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["PORT"] == "8080"
+
+    def test_yaml_float_becomes_string(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("RATE: 1.5\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["RATE"] == "1.5"
 
 
 class TestNormalizeStructuredValue:

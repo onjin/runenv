@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from textwrap import dedent
@@ -199,6 +200,68 @@ def test_no_env_file_found_shows_searched_names(
     out = capsys.readouterr().out
     assert ".env" in out
     assert "None" not in out
+
+
+def test_lint_as_json_outputs_valid_json(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("TEST=3\nTEST=2\n")
+    run(["lint", "--env-file", str(env_file), "--lint-level", "warning", "--as-json"])
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert all("level" in item and "message" in item and "line_number" in item for item in data)
+
+
+def test_lint_none_level_fail_on_error_suppresses_output_but_exits_nonzero(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+) -> None:
+    env_file = tmp_path / "test.json"
+    env_file.write_text("[1,2,3]")
+    ret = run(["lint", "--env-file", str(env_file), "--lint-level", "none", "--fail-on", "error"])
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert ret == 1
+
+
+def test_lint_json_file_reports_null_value_warning(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+) -> None:
+    env_file = tmp_path / "test.json"
+    env_file.write_text('{"KEY": null}')
+    run(["lint", "--env-file", str(env_file), "--lint-level", "warning"])
+    captured = capsys.readouterr()
+    assert "[warning]" in captured.err
+    assert "null value" in captured.err
+
+
+def test_lint_yaml_file_reports_null_value_warning(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+) -> None:
+    env_file = tmp_path / "test.yaml"
+    env_file.write_text("KEY: null\n")
+    run(["lint", "--env-file", str(env_file), "--lint-level", "warning"])
+    captured = capsys.readouterr()
+    assert "[warning]" in captured.err
+    assert "null value" in captured.err
+
+
+def test_lint_toml_file_reports_posix_warning(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+) -> None:
+    env_file = tmp_path / "test.toml"
+    env_file.write_text('"app.debug" = "1"\n')
+    run(["lint", "--env-file", str(env_file), "--lint-level", "warning"])
+    captured = capsys.readouterr()
+    assert "[warning]" in captured.err
+    assert "POSIX" in captured.err
 
 
 def test_value_error_from_api_caught_at_cli_boundary(
