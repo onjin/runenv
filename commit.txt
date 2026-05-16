@@ -1,6 +1,0 @@
-fix(parser): preserve real source line numbers for JSON/TOML/YAML loaders
-
-Replace the sequential key counter with actual file line numbers in
-structured format loaders. JSON and TOML use a regex text-scan to find
-each key's position; YAML uses yaml.compose() which exposes per-node
-start_mark line offsets. Lint messages now point at real source lines.

@@ -4,6 +4,7 @@ from runenv.parser import (
     EnvParser,
     ParseOptions,
     _json_line_numbers,
+    _normalize_structured_value,
     _toml_line_numbers,
     _yaml_line_numbers,
     lint_env_file,
@@ -94,6 +95,56 @@ class TestStructuredLoaders:
         env_file.write_bytes(b"")
         result = parse_env_file(env_file, ParseOptions())
         assert result == {}
+
+
+class TestNormalizeStructuredValue:
+    def test_true_becomes_lowercase_string(self):
+        assert _normalize_structured_value(True) == "true"
+
+    def test_false_becomes_lowercase_string(self):
+        assert _normalize_structured_value(False) == "false"
+
+    def test_int_becomes_string(self):
+        assert _normalize_structured_value(8080) == "8080"
+
+    def test_float_becomes_string(self):
+        assert _normalize_structured_value(1.5) == "1.5"
+
+    def test_string_passthrough(self):
+        assert _normalize_structured_value("hello") == "hello"
+
+    def test_json_bool_true_normalized(self, tmp_path):
+        env_file = tmp_path / "test.json"
+        env_file.write_text('{"DEBUG": true, "VERBOSE": false}')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["DEBUG"] == "true"
+        assert result["VERBOSE"] == "false"
+
+    def test_yaml_bool_true_normalized(self, tmp_path):
+        env_file = tmp_path / "test.yaml"
+        env_file.write_text("DEBUG: true\nVERBOSE: false\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["DEBUG"] == "true"
+        assert result["VERBOSE"] == "false"
+
+    def test_toml_bool_true_normalized(self, tmp_path):
+        env_file = tmp_path / "test.toml"
+        env_file.write_text("DEBUG = true\nVERBOSE = false\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["DEBUG"] == "true"
+        assert result["VERBOSE"] == "false"
+
+    def test_json_int_becomes_string(self, tmp_path):
+        env_file = tmp_path / "test.json"
+        env_file.write_text('{"PORT": 8080}')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["PORT"] == "8080"
+
+    def test_json_float_becomes_string(self, tmp_path):
+        env_file = tmp_path / "test.json"
+        env_file.write_text('{"RATE": 1.5}')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["RATE"] == "1.5"
 
 
 class TestStructuredLoaderLineNumbers:

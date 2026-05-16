@@ -54,6 +54,12 @@ def _yaml_line_numbers(content: str) -> Dict[str, int]:
     return result
 
 
+def _normalize_structured_value(value: object) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
 @dataclass
 class ParseOptions:
     prefix: Union[str, None] = None
@@ -217,8 +223,10 @@ class EnvParser:
             if value is None:
                 msg = f"'{key}' has null value, using empty string"
                 self.messages.append(ParseMessage(line_number=ln, level="warning", message=msg))
-                value = ""
-            environ.append((ln, key, value))
+                value_str = ""
+            else:
+                value_str = _normalize_structured_value(value)
+            environ.append((ln, key, value_str))
         return environ
 
     def load_json_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
