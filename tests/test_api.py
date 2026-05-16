@@ -1,6 +1,8 @@
 import os
 from unittest import mock
 
+import pytest
+
 from runenv import create_env, load_env
 
 from . import TESTS_DIR
@@ -35,8 +37,8 @@ class TestApi:
         assert environ.get("FROM_ENV") == "MAYBE-YES"
 
     @mock.patch.dict(os.environ, {}, clear=True)
-    def test_load_env_from_default_file(self) -> None:
-        os.chdir(os.path.join(TESTS_DIR, "cwd"))
+    def test_load_env_from_default_file(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.chdir(os.path.join(TESTS_DIR, "cwd"))
 
         assert "RUNENV_STRING" not in os.environ
         assert "RUNENV_NUMBER" not in os.environ
@@ -52,8 +54,8 @@ class TestApi:
         assert os.environ.get("RUNENV_FLOAT") == "12.12"
 
     @mock.patch.dict(os.environ, {}, clear=True)
-    def test_load_env_only_prefixed_variables(self) -> None:
-        os.chdir(os.path.join(TESTS_DIR, "cwd"))
+    def test_load_env_only_prefixed_variables(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.chdir(os.path.join(TESTS_DIR, "cwd"))
 
         assert "RUNENVC_STRING" not in os.environ
         assert "RUNENVC_NUMBER" not in os.environ
@@ -67,8 +69,8 @@ class TestApi:
         assert "RUNENVC_FLOAT" not in os.environ
 
     @mock.patch.dict(os.environ, {}, clear=True)
-    def test_load_env_only_prefixed_variables_without_strip_prefix(self) -> None:
-        os.chdir(os.path.join(TESTS_DIR, "cwd"))
+    def test_load_env_only_prefixed_variables_without_strip_prefix(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.chdir(os.path.join(TESTS_DIR, "cwd"))
 
         assert "RUNENVC_STRING" not in os.environ
         assert "RUNENVC_NUMBER" not in os.environ
@@ -81,8 +83,8 @@ class TestApi:
         assert "RUNENVC_FLOAT" not in os.environ
 
     @mock.patch.dict(os.environ, {}, clear=True)
-    def test_load_env_from_custom_file(self) -> None:
-        os.chdir(os.path.join(TESTS_DIR, "cwd"))
+    def test_load_env_from_custom_file(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.chdir(os.path.join(TESTS_DIR, "cwd"))
 
         assert "RUNENVC_STRING" not in os.environ
         assert "RUNENVC_NUMBER" not in os.environ
@@ -98,8 +100,8 @@ class TestApi:
         assert os.environ.get("RUNENVC_FLOAT") == "14.14"
 
     @mock.patch.dict(os.environ, {}, clear=True)
-    def test_load_env_skip_if_wrapped_by_runenv(self) -> None:
-        os.chdir(os.path.join(TESTS_DIR, "cwd"))
+    def test_load_env_skip_if_wrapped_by_runenv(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.chdir(os.path.join(TESTS_DIR, "cwd"))
 
         assert "RUNENVC_STRING" not in os.environ
         assert "RUNENVC_NUMBER" not in os.environ
@@ -115,8 +117,8 @@ class TestApi:
         assert "RUNENVC_FLOAT" not in os.environ
 
     @mock.patch.dict(os.environ, {}, clear=True)
-    def test_load_env_force_even_wrapped_by_runenv(self) -> None:
-        os.chdir(os.path.join(TESTS_DIR, "cwd"))
+    def test_load_env_force_even_wrapped_by_runenv(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.chdir(os.path.join(TESTS_DIR, "cwd"))
 
         assert "RUNENVC_STRING" not in os.environ
         assert "RUNENVC_NUMBER" not in os.environ
@@ -138,9 +140,9 @@ class TestApi:
         load_env(env_file="env.missing")
 
     @mock.patch.dict(os.environ, {}, clear=True)
-    def test_search_parent(self) -> None:
+    def test_search_parent(self, monkeypatch: pytest.MonkeyPatch) -> None:
         env_file = "env.search_parent"
-        os.chdir(os.path.join(TESTS_DIR, "search_parent", "project"))
+        monkeypatch.chdir(os.path.join(TESTS_DIR, "search_parent", "project"))
 
         load_env(env_file=env_file)
         assert "PARENT" not in os.environ
@@ -157,9 +159,9 @@ class TestApi:
         assert os.environ.get("PARENT") == "2"
 
     @mock.patch.dict(os.environ, {}, clear=True)
-    def test_search_grand_parent(self) -> None:
+    def test_search_grand_parent(self, monkeypatch: pytest.MonkeyPatch) -> None:
         env_file = "env.search_grandparent"
-        os.chdir(os.path.join(TESTS_DIR, "search_grandparent", "project"))
+        monkeypatch.chdir(os.path.join(TESTS_DIR, "search_grandparent", "project"))
 
         load_env(env_file=env_file)
         assert "GRAND_PARENT" not in os.environ
