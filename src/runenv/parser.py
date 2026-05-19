@@ -17,6 +17,8 @@ POSIX_NAME_REGEX = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 EXPORT_BARE_REGEX = re.compile(r'^\s*export\s+[\w.]+\s*$')
 TRIPLE_QUOTE_START_REGEX = re.compile(r'^\s*(?:export\s+)?([\w.]+)\s*=\s*("""|\'\'\')(.*)')
 
+_DOLLAR_PLACEHOLDER = "\x00"
+
 _ESCAPE_MAP: Dict[str, str] = {
     'n': '\n',
     't': '\t',
@@ -384,7 +386,9 @@ def substitute_variables(value: str, env_vars: Dict[str, str]) -> str:
         return ""
 
     logger.debug(f"VALUE: {value} , type {type(value)}")
-    return VARIABLE_REFERENCE_REGEX.sub(replace_match, str(value))
+    escaped = str(value).replace("$$", _DOLLAR_PLACEHOLDER)
+    result = VARIABLE_REFERENCE_REGEX.sub(replace_match, escaped)
+    return result.replace(_DOLLAR_PLACEHOLDER, "$")
 
 
 def parse_env_file(env_file: Union[str, Path], options: ParseOptions) -> Dict[str, str]:

@@ -721,3 +721,47 @@ class TestTripleQuotedValues:
         assert result["A"] == "foo\n"
         assert result["B"] == "bar"
         assert result["C"] == "baz\n"
+
+
+class TestDollarEscape:
+    def test_double_dollar_becomes_literal_dollar(self):
+        assert substitute_variables("$$HOME", {}) == "$HOME"
+
+    def test_double_dollar_at_end(self):
+        assert substitute_variables("value$$", {}) == "value$"
+
+    def test_double_dollar_only(self):
+        assert substitute_variables("$$", {}) == "$"
+
+    def test_double_dollar_before_braced_var(self):
+        assert substitute_variables("$${HOME}", {}) == "${HOME}"
+
+    def test_double_dollar_mixed_with_expansion(self):
+        assert substitute_variables("${VAR}$$${OTHER}", {"VAR": "a", "OTHER": "b"}) == "a$b"
+
+    def test_double_dollar_path_like(self):
+        assert substitute_variables("$$HOME/.config", {}) == "$HOME/.config"
+
+    def test_single_dollar_unaffected(self):
+        assert substitute_variables("${FOO}", {"FOO": "bar"}) == "bar"
+
+    def test_no_dollars_unaffected(self):
+        assert substitute_variables("plain value", {}) == "plain value"
+
+    def test_double_dollar_in_env_file(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=$$HOME/.config\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "$HOME/.config"
+
+    def test_double_dollar_in_double_quoted(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="prefix-$$VAR-suffix"\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "prefix-$VAR-suffix"
+
+    def test_double_dollar_with_expansion_in_file(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("HOST=localhost\nURL=http://${HOST}/$$path\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["URL"] == "http://localhost/$path"
