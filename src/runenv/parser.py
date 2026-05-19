@@ -12,9 +12,10 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 logger = logging.getLogger(__name__)
 
 # Regular expression to match variable references like ${VAR_NAME}
-VARIABLE_LINE_REGEX = re.compile(r'^\s*([\w.]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\n#]*?))\s*(?:#.*)?$')
+VARIABLE_LINE_REGEX = re.compile(r'^\s*(?:export\s+)?([\w.]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\n#]*?))\s*(?:#.*)?$')
 VARIABLE_REFERENCE_REGEX = re.compile(r"\$\{(\w+)(?:(:-|:[\?+]|-)([^}]*))?\}")
 POSIX_NAME_REGEX = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
+EXPORT_BARE_REGEX = re.compile(r'^\s*export\s+[\w.]+\s*$')
 
 
 def _json_line_numbers(content: str, keys: Iterable[str]) -> Dict[str, int]:
@@ -199,6 +200,9 @@ class EnvParser:
 
                 # Skip empty lines and comments
                 if not line or line.startswith("#"):
+                    continue
+
+                if EXPORT_BARE_REGEX.match(line):
                     continue
 
                 # Match key-value pairs (supports inline comments and empty values)

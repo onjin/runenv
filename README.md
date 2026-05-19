@@ -199,8 +199,8 @@ The `:?` operator causes `runenv run` / `runenv list` to exit non-zero and `rune
 DEBUG=1
 PORT=8000
 
-# Nested variable
-HOST=localhost
+# export keyword is accepted (and discarded) for shell-source compatibility
+export HOST=localhost
 URL=http://${HOST}:${PORT}
 
 # Default values via parameter expansion

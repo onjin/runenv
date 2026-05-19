@@ -515,3 +515,43 @@ class TestParameterExpansion:
         env_file.write_text("URL=http://${HOST:-localhost}:8080\n")
         result = parse_env_file(env_file, ParseOptions())
         assert result["URL"] == "http://localhost:8080"
+
+
+class TestExportKeyword:
+    def test_export_with_value(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("export FOO=bar\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["FOO"] == "bar"
+
+    def test_export_with_double_quoted_value(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('export BAR="hello world"\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["BAR"] == "hello world"
+
+    def test_export_with_single_quoted_value(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("export BAZ='secret'\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["BAZ"] == "secret"
+
+    def test_export_bare_skipped_silently(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("export ALREADY_SET\nFOO=bar\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result == {"FOO": "bar"}
+        messages = lint_env_file(env_file, ParseOptions())
+        assert not any(m.message == "line not matched" for m in messages)
+
+    def test_mixed_export_and_plain(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("export A=1\nB=2\nexport C=3\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result == {"A": "1", "B": "2", "C": "3"}
+
+    def test_export_with_inline_comment(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("export HOST=localhost # dev only\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["HOST"] == "localhost"
