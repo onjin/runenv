@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.4.2 (2026-05-19)
+
+### Features
+
+- **parser:** support $$ escape for literal dollar sign 
+- **parser:** support escape sequences and triple-quoted multi-line values - Add triple-quoted heredoc syntax: KEY="""...""" and KEY='''...'''
+- **parser:** support `export VAR=value` syntax 
+- **parser:** add bash-style parameter expansion operators 
+
+### Chore
+
+- **git:** add local env/envrc files to the .gitignore 
+
 ## v1.4.1 (2026-05-16)
 
 ### Features
