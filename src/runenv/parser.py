@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # Regular expression to match variable references like ${VAR_NAME}
 VARIABLE_LINE_REGEX = re.compile(r'^\s*([\w.]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\n#]*?))\s*(?:#.*)?$')
-VARIABLE_REFERENCE_REGEX = re.compile(r"\$\{(\w+)\}")
+VARIABLE_REFERENCE_REGEX = re.compile(r"\$\{(\w+)(?:(:-|:[\?+]|-)([^}]*))?\}")
 POSIX_NAME_REGEX = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
 
@@ -78,6 +78,7 @@ class EnvParser:
     def __init__(self, options: ParseOptions) -> None:
         self.options: ParseOptions = options
         self.raw_environ: Dict[str, str] = {}
+        self._line_numbers: Dict[str, int] = {}
         self.final_environ: Dict[str, str] = {}
         self.messages: List[ParseMessage] = []
 
@@ -131,15 +132,30 @@ class EnvParser:
                     )
                 )
             self.raw_environ[key] = value
+            self._line_numbers[key] = line_number
 
         self._find_cycles()
+        expansion_errors: List[str] = []
         for key, value in self.raw_environ.items():
-            self.final_environ[key] = substitute_variables(value, self.raw_environ)
+            try:
+                self.final_environ[key] = substitute_variables(value, self.raw_environ)
+            except ValueError as exc:
+                msg = str(exc)
+                expansion_errors.append(msg)
+                self.messages.append(
+                    ParseMessage(
+                        line_number=self._line_numbers.get(key, 0),
+                        level="error",
+                        message=msg,
+                    )
+                )
+        if expansion_errors:
+            raise ValueError(expansion_errors[0])
         return self
 
     def _find_cycles(self) -> None:
         deps: Dict[str, Set[str]] = {
-            key: set(VARIABLE_REFERENCE_REGEX.findall(value)) & self.raw_environ.keys()
+            key: {m[0] for m in VARIABLE_REFERENCE_REGEX.findall(value)} & self.raw_environ.keys()
             for key, value in self.raw_environ.items()
         }
 
@@ -270,25 +286,37 @@ class EnvParser:
 
 
 def substitute_variables(value: str, env_vars: Dict[str, str]) -> str:
-    """Resolve ``${VAR}`` references in *value*.
-
-    Resolution order:
-    1. Keys already parsed from the env file (``env_vars``).
-    2. The caller's ``os.environ`` — allows referencing variables that are
-       set in the shell before ``runenv`` is invoked (e.g. ``HOME``, ``USER``).
-    3. Empty string — undefined references expand silently to ``""``.
-
-    The fallback to ``os.environ`` is intentional: it lets env files reference
-    parent-process state such as ``BASE_URL=${MY_HOST}`` without requiring the
-    variable to be redeclared inside the file.  If you want strict behaviour
-    (error on undefined refs) use ``--strict`` once that flag is implemented.
-    """
-
     def replace_match(match: re.Match[str]) -> str:
-        var_name = match.group(1)
-        return str(env_vars.get(var_name, os.environ.get(var_name, "")))
+        name = match.group(1)
+        op = match.group(2)
+        operand = match.group(3) or ""
 
-    # Replace all occurrences of ${VAR_NAME} in the value
+        in_env_vars = name in env_vars
+        in_os_environ = name in os.environ
+        if in_env_vars:
+            resolved: Optional[str] = str(env_vars[name])
+        elif in_os_environ:
+            resolved = os.environ[name]
+        else:
+            resolved = None
+
+        is_set = resolved is not None
+        is_nonempty = is_set and resolved != ""
+
+        if op is None:
+            return resolved if is_set else ""
+        if op == ":-":
+            return resolved if is_nonempty else operand
+        if op == "-":
+            return resolved if is_set else operand
+        if op == ":?":
+            if not is_nonempty:
+                raise ValueError(operand or f"{name}: unset or empty")
+            return resolved  # type: ignore[return-value]
+        if op == ":+":
+            return operand if is_nonempty else ""
+        return ""
+
     logger.debug(f"VALUE: {value} , type {type(value)}")
     return VARIABLE_REFERENCE_REGEX.sub(replace_match, str(value))
 

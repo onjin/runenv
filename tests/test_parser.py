@@ -422,3 +422,96 @@ class TestCircularReferences:
         env_file.write_text("A=${B}\nB=${A}\nSAFE=ok\n")
         result = parse_env_file(env_file, ParseOptions())
         assert result["SAFE"] == "ok"
+
+
+class TestParameterExpansion:
+    # ${VAR:-default} — use default if unset or empty
+    def test_colon_dash_uses_default_when_unset(self):
+        assert substitute_variables("${VAR:-fallback}", {}) == "fallback"
+
+    def test_colon_dash_uses_default_when_empty(self):
+        assert substitute_variables("${VAR:-fallback}", {"VAR": ""}) == "fallback"
+
+    def test_colon_dash_uses_value_when_set(self):
+        assert substitute_variables("${VAR:-fallback}", {"VAR": "hello"}) == "hello"
+
+    def test_colon_dash_uses_value_when_set_to_zero(self):
+        assert substitute_variables("${VAR:-fallback}", {"VAR": "0"}) == "0"
+
+    # ${VAR-default} — use default only when unset
+    def test_dash_uses_default_when_unset(self):
+        assert substitute_variables("${VAR-fallback}", {}) == "fallback"
+
+    def test_dash_keeps_empty_value(self):
+        assert substitute_variables("${VAR-fallback}", {"VAR": ""}) == ""
+
+    def test_dash_uses_value_when_set(self):
+        assert substitute_variables("${VAR-fallback}", {"VAR": "hello"}) == "hello"
+
+    # ${VAR:?msg} — fail if unset or empty
+    def test_colon_question_passes_when_set(self):
+        assert substitute_variables("${VAR:?must be set}", {"VAR": "hello"}) == "hello"
+
+    def test_colon_question_raises_when_unset(self):
+        with pytest.raises(ValueError, match="must be set"):
+            substitute_variables("${VAR:?must be set}", {})
+
+    def test_colon_question_raises_when_empty(self):
+        with pytest.raises(ValueError, match="required"):
+            substitute_variables("${VAR:?required}", {"VAR": ""})
+
+    def test_colon_question_default_message_when_no_msg(self):
+        with pytest.raises(ValueError, match="VAR"):
+            substitute_variables("${VAR:?}", {})
+
+    # ${VAR:+alt} — emit alt only when set and non-empty
+    def test_colon_plus_uses_alt_when_set(self):
+        assert substitute_variables("${VAR:+alt}", {"VAR": "hello"}) == "alt"
+
+    def test_colon_plus_empty_when_unset(self):
+        assert substitute_variables("${VAR:+alt}", {}) == ""
+
+    def test_colon_plus_empty_when_var_empty(self):
+        assert substitute_variables("${VAR:+alt}", {"VAR": ""}) == ""
+
+    # os.environ fallback for all operators
+    def test_colon_dash_falls_back_to_os_environ(self, monkeypatch):
+        monkeypatch.setenv("OS_VAR", "from-shell")
+        assert substitute_variables("${OS_VAR:-fallback}", {}) == "from-shell"
+
+    def test_colon_question_passes_with_os_environ(self, monkeypatch):
+        monkeypatch.setenv("OS_VAR", "from-shell")
+        assert substitute_variables("${OS_VAR:?missing}", {}) == "from-shell"
+
+    # Integration: parser-level :? error becomes error-level message
+    def test_parser_error_message_on_required_unset(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("REQUIRED_VAR", raising=False)
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${REQUIRED_VAR:?must be set}\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert len(errors) == 1
+        assert "must be set" in errors[0].message
+
+    def test_parser_raises_for_required_unset(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("REQUIRED_VAR", raising=False)
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${REQUIRED_VAR:?must be set}\n")
+        with pytest.raises(ValueError, match="must be set"):
+            parse_env_file(env_file, ParseOptions())
+
+    def test_parser_error_line_number_tracked(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("MISSING", raising=False)
+        env_file = tmp_path / ".env"
+        env_file.write_text("A=1\nB=2\nC=${MISSING:?missing var}\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert errors[0].line_number == 3
+
+    # Integration: full parse with defaults in env file
+    def test_default_resolved_in_file(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("HOST", raising=False)
+        env_file = tmp_path / ".env"
+        env_file.write_text("URL=http://${HOST:-localhost}:8080\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["URL"] == "http://localhost:8080"

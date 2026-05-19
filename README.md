@@ -29,6 +29,7 @@ Manage application settings with ease using `runenv`, a lightweight tool inspire
 - [Multiple Profiles](#multiple-profiles)
 - [Framework Integrations](#framework-integrations)
 - [Parsing Behaviour](#parsing-behaviour)
+  - [Variable Expansion](#variable-expansion)
 - [Sample `.env` File](#sample-env-file)
 - [Similar Tools](#similar-tools)
 
@@ -41,6 +42,7 @@ Manage application settings with ease using `runenv`, a lightweight tool inspire
 - ⚙️ **Multiple Profiles**: Switch easily between `.env.dev`, `.env.prod`, etc.
 - ⚙️ **Multiple Formats**: Use plain `.env`, `.env.json`, `.env.toml`, or `.env.yaml`
 - ⚙️ **Autodetect Env File**: Looking for `.env`, `.env.json`, `.env.toml`, and `.env.yaml`
+- 🔧 **Parameter Expansion**: Bash-style `${VAR:-default}`, `${VAR:?msg}`, `${VAR:+alt}` operators.
 - 🧩 **Framework-Friendly**: Works well with Django, Flask, FastAPI, and more.
 
 ---
@@ -174,6 +176,20 @@ app = FastAPI()
 
 Duplicate keys are **not** an error — the last value in the file takes effect, matching the behaviour of most shell `.env` loaders. Use `runenv lint` to surface duplicates as warnings before they reach production.
 
+### Variable Expansion
+
+`${VAR}` references resolve against variables defined in the same file and then fall back to the calling shell's `os.environ`. The following bash-style parameter expansion operators are supported:
+
+| Syntax | Behaviour |
+|--------|-----------|
+| `${VAR}` | Value of `VAR`; empty string if unset |
+| `${VAR:-default}` | Value of `VAR` if set and non-empty, otherwise `default` |
+| `${VAR-default}` | Value of `VAR` if set (even if empty), otherwise `default` |
+| `${VAR:?msg}` | Value of `VAR` if set and non-empty; fatal error with `msg` otherwise |
+| `${VAR:+alt}` | `alt` if `VAR` is set and non-empty, otherwise empty string |
+
+The `:?` operator causes `runenv run` / `runenv list` to exit non-zero and `runenv lint` to report an error-level message with the line number where the variable is declared.
+
 ---
 
 ## Sample `.env` File
@@ -187,9 +203,19 @@ PORT=8000
 HOST=localhost
 URL=http://${HOST}:${PORT}
 
+# Default values via parameter expansion
+CACHE_URL=${REDIS_URL:-redis://localhost:6379}
+LOG_LEVEL=${LOG_LEVEL-info}
+
+# Required variable — fails with a clear message if unset
+SECRET=${APP_SECRET:?APP_SECRET must be set before running}
+
+# Conditional value — only set when FEATURE_FLAG is enabled
+FEATURE_HEADER=${FEATURE_FLAG:+X-Feature: on}
+
 # Quotes and comments
 EMAIL="admin@example.com" # Inline comment
-SECRET='s3cr3t'
+TOKEN='s3cr3t'
 ```
 
 ---
