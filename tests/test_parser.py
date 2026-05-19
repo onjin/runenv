@@ -5,6 +5,7 @@ from runenv.parser import (
     ParseOptions,
     _json_line_numbers,
     _normalize_structured_value,
+    _process_escape_sequences,
     _toml_line_numbers,
     _yaml_line_numbers,
     lint_env_file,
@@ -555,3 +556,168 @@ class TestExportKeyword:
         env_file.write_text("export HOST=localhost # dev only\n")
         result = parse_env_file(env_file, ParseOptions())
         assert result["HOST"] == "localhost"
+
+
+class TestProcessEscapeSequences:
+    def test_newline_escape(self):
+        assert _process_escape_sequences(r"line1\nline2") == "line1\nline2"
+
+    def test_tab_escape(self):
+        assert _process_escape_sequences(r"col1\tcol2") == "col1\tcol2"
+
+    def test_carriage_return_escape(self):
+        assert _process_escape_sequences(r"text\rmore") == "text\rmore"
+
+    def test_backslash_escape(self):
+        assert _process_escape_sequences(r"path\\to\\file") == r"path\to\file"
+
+    def test_double_quote_escape(self):
+        assert _process_escape_sequences(r'say \"hello\"') == 'say "hello"'
+
+    def test_unknown_escape_preserved(self):
+        assert _process_escape_sequences(r"\x41") == r"\x41"
+
+    def test_trailing_backslash_preserved(self):
+        assert _process_escape_sequences("abc\\") == "abc\\"
+
+    def test_empty_string(self):
+        assert _process_escape_sequences("") == ""
+
+    def test_no_escapes(self):
+        assert _process_escape_sequences("hello world") == "hello world"
+
+
+class TestEscapeSequences:
+    def test_double_quoted_newline(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="line1\\nline2"\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "line1\nline2"
+
+    def test_double_quoted_tab(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="col1\\tcol2"\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "col1\tcol2"
+
+    def test_double_quoted_backslash(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="path\\\\to\\\\file"\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "path\\to\\file"
+
+    def test_double_quoted_escaped_quote(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="say \\"hello\\""\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == 'say "hello"'
+
+    def test_single_quoted_no_escape_processing(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY='no\\nprocessing'\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "no\\nprocessing"
+
+    def test_unquoted_no_escape_processing(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=no\\nprocessing\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "no\\nprocessing"
+
+    def test_double_quoted_multiple_escapes(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="a\\tb\\nc"\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "a\tb\nc"
+
+
+class TestTripleQuotedValues:
+    def test_triple_double_quote_multiline(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="""\nline1\nline2\n"""\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "line1\nline2\n"
+
+    def test_triple_single_quote_multiline(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY='''\nline1\nline2\n'''\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "line1\nline2\n"
+
+    def test_triple_double_quote_single_line(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="""hello"""\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "hello"
+
+    def test_triple_single_quote_single_line(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY='''hello'''\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "hello"
+
+    def test_triple_double_quote_empty(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY=""""""\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == ""
+
+    def test_triple_double_quote_with_escape(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="""line1\\nline2"""\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "line1\nline2"
+
+    def test_triple_single_quote_no_escapes(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY='''line1\\nline2'''\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "line1\\nline2"
+
+    def test_triple_double_quote_internal_single_quotes(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="""say \'hello\' there"""\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "say 'hello' there"
+
+    def test_triple_single_quote_internal_double_quotes(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY=\'\'\'say "hello" there\'\'\'\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == 'say "hello" there'
+
+    def test_triple_double_quote_with_export(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('export KEY="""\nvalue\n"""\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "value\n"
+
+    def test_triple_double_quote_multiline_pem_like(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('CERT="""\n-----BEGIN CERT-----\nABCDEF\n-----END CERT-----\n"""\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["CERT"] == "-----BEGIN CERT-----\nABCDEF\n-----END CERT-----\n"
+
+    def test_triple_quote_unclosed_emits_error(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="""\nno closing quote\n')
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert len(errors) == 1
+        assert "unclosed" in errors[0].message
+        assert "KEY" in errors[0].message
+
+    def test_triple_quote_unclosed_key_not_in_result(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('OTHER=ok\nKEY="""\nno closing\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert "KEY" not in result
+        assert result.get("OTHER") == "ok"
+
+    def test_multiple_triple_quoted_keys(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('A="""\nfoo\n"""\nB=bar\nC="""\nbaz\n"""\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["A"] == "foo\n"
+        assert result["B"] == "bar"
+        assert result["C"] == "baz\n"

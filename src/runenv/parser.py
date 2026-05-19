@@ -11,11 +11,33 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
-# Regular expression to match variable references like ${VAR_NAME}
-VARIABLE_LINE_REGEX = re.compile(r'^\s*(?:export\s+)?([\w.]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\n#]*?))\s*(?:#.*)?$')
+VARIABLE_LINE_REGEX = re.compile(r'^\s*(?:export\s+)?([\w.]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|\'([^\']*)\'|([^\n#]*?))\s*(?:#.*)?$')
 VARIABLE_REFERENCE_REGEX = re.compile(r"\$\{(\w+)(?:(:-|:[\?+]|-)([^}]*))?\}")
 POSIX_NAME_REGEX = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 EXPORT_BARE_REGEX = re.compile(r'^\s*export\s+[\w.]+\s*$')
+TRIPLE_QUOTE_START_REGEX = re.compile(r'^\s*(?:export\s+)?([\w.]+)\s*=\s*("""|\'\'\')(.*)')
+
+_ESCAPE_MAP: Dict[str, str] = {
+    'n': '\n',
+    't': '\t',
+    'r': '\r',
+    '"': '"',
+    '\\': '\\',
+}
+
+
+def _process_escape_sequences(value: str) -> str:
+    result = []
+    i = 0
+    while i < len(value):
+        if value[i] == '\\' and i + 1 < len(value):
+            escaped = value[i + 1]
+            result.append(_ESCAPE_MAP.get(escaped, '\\' + escaped))
+            i += 2
+        else:
+            result.append(value[i])
+            i += 1
+    return ''.join(result)
 
 
 def _json_line_numbers(content: str, keys: Iterable[str]) -> Dict[str, int]:
@@ -191,38 +213,78 @@ class EnvParser:
     def load_env_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
         environ: List[Tuple[int, str, str]] = []
         with open(env_file) as f:
+            all_lines = list(enumerate(f, start=1))
 
-            for line_number, raw_line in enumerate(f, start=1):
-                line = raw_line.rstrip(os.linesep)
+        idx = 0
+        while idx < len(all_lines):
+            line_number, raw_line = all_lines[idx]
+            line = raw_line.rstrip(os.linesep).strip()
+            idx += 1
 
-                # Strip leading and trailing whitespace from the line
-                line = line.strip()
+            if not line or line.startswith("#"):
+                continue
 
-                # Skip empty lines and comments
-                if not line or line.startswith("#"):
-                    continue
+            if EXPORT_BARE_REGEX.match(line):
+                continue
 
-                if EXPORT_BARE_REGEX.match(line):
-                    continue
-
-                # Match key-value pairs (supports inline comments and empty values)
-                match = re.match(VARIABLE_LINE_REGEX, line)
-
-                if match:
-                    key = match.group(1)
-                    value = next(g for g in match.groups()[1:] if g is not None)
+            triple_match = TRIPLE_QUOTE_START_REGEX.match(line)
+            if triple_match:
+                key = triple_match.group(1)
+                quote = triple_match.group(2)
+                rest = triple_match.group(3)
+                close_pos = rest.find(quote)
+                if close_pos != -1:
+                    value = rest[:close_pos]
+                    if quote == '"""':
+                        value = _process_escape_sequences(value)
                     environ.append((line_number, key, value))
+                    continue
 
+                parts: List[str] = [] if not rest else [rest]
+                closed = False
+                while idx < len(all_lines):
+                    _, next_raw = all_lines[idx]
+                    idx += 1
+                    next_line = next_raw.rstrip(os.linesep)
+                    close_pos = next_line.find(quote)
+                    if close_pos != -1:
+                        parts.append(next_line[:close_pos])
+                        closed = True
+                        break
+                    parts.append(next_line)
+
+                if not closed:
+                    self.messages.append(ParseMessage(
+                        line_number=line_number,
+                        level="error",
+                        message=f"unclosed triple-quote for '{key}'",
+                    ))
+                    continue
+
+                value = "\n".join(parts)
+                if quote == '"""':
+                    value = _process_escape_sequences(value)
+                environ.append((line_number, key, value))
+                continue
+
+            match = re.match(VARIABLE_LINE_REGEX, line)
+            if match:
+                key = match.group(1)
+                if match.group(2) is not None:
+                    value = _process_escape_sequences(match.group(2))
                 else:
-                    msg = "line not matched"
-                    logger.debug("%s '%s'", msg, line)
-                    self.messages.append(
-                        ParseMessage(
-                            line_number=line_number,
-                            level="warning",
-                            message=msg,
-                        )
+                    value = next(g for g in match.groups()[1:] if g is not None)
+                environ.append((line_number, key, value))
+            else:
+                msg = "line not matched"
+                logger.debug("%s '%s'", msg, line)
+                self.messages.append(
+                    ParseMessage(
+                        line_number=line_number,
+                        level="warning",
+                        message=msg,
                     )
+                )
 
         return environ
 
