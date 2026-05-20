@@ -14,7 +14,7 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from textwrap import dedent
-from typing import List, Optional, Sequence, Union, cast
+from typing import List, Optional, Sequence, Tuple, Union, cast
 
 from runenv.__about__ import __version__
 from runenv.api import create_env, find_env_file, lint_env
@@ -24,6 +24,20 @@ from runenv.parser import ParseMessage
 logger = logging.getLogger(__name__)
 
 LEVEL_ORDER = {"none": 0, "info": 1, "warning": 2, "error": 3}
+_LEVEL_BY_ORDER = {v: k for k, v in LEVEL_ORDER.items()}
+
+
+def _strict_clamp(level: str) -> str:
+    n = LEVEL_ORDER.get(level, 0)
+    if n == 0 or n > LEVEL_ORDER["warning"]:
+        return "warning"
+    return level
+
+
+def _strict_lint_settings(strict: bool, fail_on: str, lint_level: str) -> Tuple[str, str]:
+    if not strict:
+        return fail_on, lint_level
+    return _strict_clamp(fail_on), _strict_clamp(lint_level)
 
 
 def add_stdout_handler(verbosity: int) -> None:
@@ -59,6 +73,7 @@ class RunCMDOptions(CLIOptions):
     command: List[str]
     lint_level: str
     fail_on: str
+    strict: bool
 
 
 @dataclass
@@ -69,6 +84,7 @@ class ListCMDOptions(CLIOptions):
     search_parent: int
     lint_level: str
     fail_on: str
+    strict: bool
 
 
 @dataclass
@@ -80,6 +96,7 @@ class LintCMDOptions(CLIOptions):
     as_json: bool
     lint_level: str
     fail_on: str
+    strict: bool
 
 
 def fail(msg: str, returncode: int = 1) -> None:
@@ -117,14 +134,16 @@ def handle_run_subcommand(options: RunCMDOptions) -> Union[int, None]:
 
     if options.lint_level != "none" or options.fail_on != "none":
         messages = lint_env(
-            options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
+            options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
+            search_parent=options.search_parent, strict=options.strict,
         )
         rc = apply_lint_policy(messages, options.lint_level, options.fail_on)
         if rc != 0:
             return rc
 
     loaded_env = create_env(
-        options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
+        options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
+        search_parent=options.search_parent, strict=options.strict,
     )
     loaded_env["_RUNENV_WRAPPED"] = "1"
     os.environ.update(loaded_env)
@@ -147,14 +166,16 @@ def handle_run_subcommand(options: RunCMDOptions) -> Union[int, None]:
 def handle_list_subcommand(options: ListCMDOptions) -> int:
     if options.lint_level != "none" or options.fail_on != "none":
         messages = lint_env(
-            options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
+            options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
+            search_parent=options.search_parent, strict=options.strict,
         )
         rc = apply_lint_policy(messages, options.lint_level, options.fail_on)
         if rc != 0:
             return rc
 
     loaded_env = create_env(
-        options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
+        options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
+        search_parent=options.search_parent, strict=options.strict,
     )
     for key, value in sorted(loaded_env.items()):
         sys.stdout.write(f"{key}={value}\n")
@@ -163,7 +184,8 @@ def handle_list_subcommand(options: ListCMDOptions) -> int:
 
 def handle_lint_subcommand(options: LintCMDOptions) -> int:
     messages = lint_env(
-        options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix, search_parent=options.search_parent
+        options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
+        search_parent=options.search_parent, strict=options.strict,
     )
     return apply_lint_policy(messages, options.lint_level, options.fail_on, as_json=options.as_json)
 
@@ -257,6 +279,11 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         default="none",
         help="Minimum message level that causes a non-zero exit before running the command (default: none)",
     )
+    run_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Enable strict mode: warn on undefined/ambient variable references, treat duplicates as errors; implies --fail-on warning",
+    )
 
     # --- list command ---
     list_parser = subparsers.add_parser("list", help="List parsed variables")
@@ -295,6 +322,11 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         choices=["none", "info", "warning", "error"],
         default="none",
         help="Minimum message level that causes a non-zero exit before listing (default: none)",
+    )
+    list_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Enable strict mode: warn on undefined/ambient variable references, treat duplicates as errors; implies --fail-on warning",
     )
 
     # --- lint command ---
@@ -340,6 +372,11 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         default="error",
         help="Minimum message level that causes a non-zero exit (default: error)",
     )
+    lint_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Enable strict mode: warn on undefined/ambient variable references, treat duplicates as errors; implies --fail-on warning",
+    )
 
     args = parser.parse_args(argv)
 
@@ -360,6 +397,7 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
                 fail(f"ERROR!!! Environment file `{args.env_file}` does not exist", 1)
             else:
                 fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
+        fail_on, lint_level = _strict_lint_settings(args.strict, args.fail_on, args.lint_level)
         opts = RunCMDOptions(
             verbosity=args.verbosity,
             env_file=args.env_file,
@@ -367,8 +405,9 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
             strip_prefix=args.strip_prefix,
             search_parent=args.search_parent,
             command=args.command,
-            lint_level=args.lint_level,
-            fail_on=args.fail_on,
+            lint_level=lint_level,
+            fail_on=fail_on,
+            strict=args.strict,
         )
     elif subcommand == "list":
         handler = handle_list_subcommand
@@ -378,14 +417,16 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
                 fail(f"ERROR!!! Environment file `{args.env_file}` does not exist", 1)
             else:
                 fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
+        fail_on, lint_level = _strict_lint_settings(args.strict, args.fail_on, args.lint_level)
         opts = ListCMDOptions(
             verbosity=args.verbosity,
             env_file=args.env_file,
             prefix=args.prefix,
             strip_prefix=args.strip_prefix,
             search_parent=args.search_parent,
-            lint_level=args.lint_level,
-            fail_on=args.fail_on,
+            lint_level=lint_level,
+            fail_on=fail_on,
+            strict=args.strict,
         )
     elif subcommand == "lint":
         handler = handle_lint_subcommand
@@ -395,6 +436,7 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
                 fail(f"ERROR!!! Environment file `{args.env_file}` does not exist", 1)
             else:
                 fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
+        fail_on, lint_level = _strict_lint_settings(args.strict, args.fail_on, args.lint_level)
         opts = LintCMDOptions(
             verbosity=args.verbosity,
             env_file=args.env_file,
@@ -402,8 +444,9 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
             strip_prefix=args.strip_prefix,
             search_parent=args.search_parent,
             as_json=args.as_json,
-            lint_level=args.lint_level,
-            fail_on=args.fail_on,
+            lint_level=lint_level,
+            fail_on=fail_on,
+            strict=args.strict,
         )
     else:
         parser.error("Unknown subcommand")

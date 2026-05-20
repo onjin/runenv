@@ -90,6 +90,7 @@ def _normalize_structured_value(value: object) -> str:
 class ParseOptions:
     prefix: Union[str, None] = None
     strip_prefix: bool = True
+    strict: bool = False
 
 
 @dataclass
@@ -152,7 +153,7 @@ class EnvParser:
                 self.messages.append(
                     ParseMessage(
                         line_number=line_number,
-                        level="warning",
+                        level="error" if self.options.strict else "warning",
                         message=msg,
                     )
                 )
@@ -163,7 +164,13 @@ class EnvParser:
         expansion_errors: List[str] = []
         for key, value in self.raw_environ.items():
             try:
-                self.final_environ[key] = substitute_variables(value, self.raw_environ)
+                self.final_environ[key] = substitute_variables(
+                    value,
+                    self.raw_environ,
+                    strict=self.options.strict,
+                    messages=self.messages,
+                    line_number=self._line_numbers.get(key, 0),
+                )
             except ValueError as exc:
                 msg = str(exc)
                 expansion_errors.append(msg)
@@ -353,7 +360,13 @@ class EnvParser:
         return self._iter_structured(root, "TOML", _toml_line_numbers(content, root.keys()))
 
 
-def substitute_variables(value: str, env_vars: Dict[str, str]) -> str:
+def substitute_variables(
+    value: str,
+    env_vars: Dict[str, str],
+    strict: bool = False,
+    messages: Optional[List[ParseMessage]] = None,
+    line_number: int = 0,
+) -> str:
     def replace_match(match: re.Match[str]) -> str:
         name = match.group(1)
         op = match.group(2)
@@ -372,6 +385,19 @@ def substitute_variables(value: str, env_vars: Dict[str, str]) -> str:
         is_nonempty = is_set and resolved != ""
 
         if op is None:
+            if strict and messages is not None and not in_env_vars:
+                if in_os_environ:
+                    messages.append(ParseMessage(
+                        line_number=line_number,
+                        level="warning",
+                        message=f"variable '{name}' resolved from environment, not defined in file",
+                    ))
+                else:
+                    messages.append(ParseMessage(
+                        line_number=line_number,
+                        level="warning",
+                        message=f"undefined variable reference '{name}'",
+                    ))
             return resolved if is_set else ""
         if op == ":-":
             return resolved if is_nonempty else operand

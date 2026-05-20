@@ -36,12 +36,13 @@ def create_env(
     prefix: Union[str, None] = None,
     strip_prefix: bool = True,  # noqa: FBT001,FBT002
     search_parent: int = 0,
+    strict: bool = False,  # noqa: FBT001,FBT002
 ) -> Dict[str, str]:
     """Create environ dictionary from current variables got from given `env_file`."""
     env_file = find_env_file(Path.cwd(), search_parent, filename=env_file)
     if not env_file:
         raise ValueError("No env file found")
-    return parse_env_file(env_file, ParseOptions(prefix=prefix, strip_prefix=strip_prefix))
+    return parse_env_file(env_file, ParseOptions(prefix=prefix, strip_prefix=strip_prefix, strict=strict))
 
 
 def load_env(
@@ -74,9 +75,10 @@ def lint_env(
     prefix: Union[str, None] = None,
     strip_prefix: bool = True,  # noqa: FBT001,FBT002
     search_parent: int = 0,
+    strict: bool = False,  # noqa: FBT001,FBT002
 ) -> List[ParseMessage]:
     """Lint env_file."""
     env_file = find_env_file(Path.cwd(), search_parent, filename=env_file)
     if not env_file:
         raise ValueError("No env file found")
-    return lint_env_file(env_file, ParseOptions(prefix=prefix, strip_prefix=strip_prefix))
+    return lint_env_file(env_file, ParseOptions(prefix=prefix, strip_prefix=strip_prefix, strict=strict))

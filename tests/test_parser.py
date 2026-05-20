@@ -765,3 +765,96 @@ class TestDollarEscape:
         env_file.write_text("HOST=localhost\nURL=http://${HOST}/$$path\n")
         result = parse_env_file(env_file, ParseOptions())
         assert result["URL"] == "http://localhost/$path"
+
+
+class TestStrictMode:
+    def test_undefined_ref_warns_in_strict(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${UNDEFINED_VAR}\n")
+        messages = lint_env_file(env_file, ParseOptions(strict=True))
+        warnings = [m for m in messages if "undefined" in m.message]
+        assert len(warnings) == 1
+        assert "UNDEFINED_VAR" in warnings[0].message
+        assert warnings[0].level == "warning"
+
+    def test_undefined_ref_silent_without_strict(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${UNDEFINED_VAR}\n")
+        messages = lint_env_file(env_file, ParseOptions(strict=False))
+        assert not any("undefined" in m.message for m in messages)
+
+    def test_ambient_os_environ_ref_warns_in_strict(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("AMBIENT_VAR", "ambient_value")
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${AMBIENT_VAR}\n")
+        messages = lint_env_file(env_file, ParseOptions(strict=True))
+        warnings = [m for m in messages if "resolved from environment" in m.message]
+        assert len(warnings) == 1
+        assert "AMBIENT_VAR" in warnings[0].message
+        assert warnings[0].level == "warning"
+
+    def test_ambient_os_environ_ref_silent_without_strict(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("AMBIENT_VAR", "ambient_value")
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${AMBIENT_VAR}\n")
+        messages = lint_env_file(env_file, ParseOptions(strict=False))
+        assert not any("resolved from environment" in m.message for m in messages)
+
+    def test_in_file_ref_no_warning_in_strict(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("BASE=hello\nKEY=${BASE}\n")
+        messages = lint_env_file(env_file, ParseOptions(strict=True))
+        assert not any("undefined" in m.message or "resolved from environment" in m.message for m in messages)
+
+    def test_duplicate_key_is_error_in_strict(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=first\nKEY=second\n")
+        messages = lint_env_file(env_file, ParseOptions(strict=True))
+        dup_messages = [m for m in messages if "duplicated" in m.message]
+        assert len(dup_messages) == 1
+        assert dup_messages[0].level == "error"
+
+    def test_duplicate_key_is_warning_without_strict(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=first\nKEY=second\n")
+        messages = lint_env_file(env_file, ParseOptions(strict=False))
+        dup_messages = [m for m in messages if "duplicated" in m.message]
+        assert len(dup_messages) == 1
+        assert dup_messages[0].level == "warning"
+
+    def test_strict_value_still_resolves(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${UNDEFINED_VAR}\n")
+        result = parse_env_file(env_file, ParseOptions(strict=True))
+        assert result["KEY"] == ""
+
+    def test_substitute_variables_strict_undefined(self):
+        from runenv.parser import ParseMessage
+        messages = []
+        result = substitute_variables("${NOVAR}", {}, strict=True, messages=messages, line_number=1)
+        assert result == ""
+        assert len(messages) == 1
+        assert "NOVAR" in messages[0].message
+        assert messages[0].level == "warning"
+
+    def test_substitute_variables_strict_ambient(self, monkeypatch):
+        monkeypatch.setenv("AMBIENT", "val")
+        from runenv.parser import ParseMessage
+        messages = []
+        result = substitute_variables("${AMBIENT}", {}, strict=True, messages=messages, line_number=1)
+        assert result == "val"
+        assert len(messages) == 1
+        assert "AMBIENT" in messages[0].message
+        assert "resolved from environment" in messages[0].message
+
+    def test_substitute_variables_non_strict_no_messages(self, monkeypatch):
+        monkeypatch.setenv("AMBIENT", "val")
+        messages = []
+        substitute_variables("${AMBIENT}", {}, strict=False, messages=messages)
+        assert messages == []
+
+    def test_default_operators_no_warning_in_strict(self, tmp_path, monkeypatch):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${MISSING:-fallback}\n")
+        messages = lint_env_file(env_file, ParseOptions(strict=True))
+        assert not any("undefined" in m.message or "resolved from environment" in m.message for m in messages)

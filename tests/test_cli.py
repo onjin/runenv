@@ -286,3 +286,69 @@ def test_value_error_from_api_caught_at_cli_boundary(
     assert exc_info.value.code == 1
     out = capsys.readouterr().out
     assert "No env file found" in out
+
+
+class TestStrictCLI:
+    def test_run_strict_fails_on_undefined_ref(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${UNDEFINED_STRICT_VAR}\n")
+        ret = run(["run", "--env-file", str(env_file), "--strict", sys.executable, "-c", ""])
+        assert ret == 1
+
+    def test_list_strict_fails_on_undefined_ref(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${UNDEFINED_STRICT_VAR}\n")
+        ret = run(["list", "--env-file", str(env_file), "--strict"])
+        assert ret == 1
+
+    def test_lint_strict_fails_on_undefined_ref(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${UNDEFINED_STRICT_VAR}\n")
+        ret = run(["lint", "--env-file", str(env_file), "--strict"])
+        assert ret == 1
+
+    def test_lint_strict_fails_on_duplicate_key(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=a\nKEY=b\n")
+        ret = run(["lint", "--env-file", str(env_file), "--strict"])
+        assert ret == 1
+
+    def test_lint_strict_shows_warnings_on_stderr(
+        self,
+        capsys: pytest.CaptureFixture[str],
+        tmp_path,
+    ):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${UNDEFINED_STRICT_VAR}\n")
+        run(["lint", "--env-file", str(env_file), "--strict"])
+        assert "[warning]" in capsys.readouterr().err
+
+    def test_run_strict_ambient_var_fails(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("AMBIENT_STRICT_VAR", "val")
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${AMBIENT_STRICT_VAR}\n")
+        ret = run(["run", "--env-file", str(env_file), "--strict", sys.executable, "-c", ""])
+        assert ret == 1
+
+    def test_run_strict_in_file_ref_succeeds(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("BASE=hello\nKEY=${BASE}\n")
+        ret = run(["run", "--env-file", str(env_file), "--strict", sys.executable, "-c", ""])
+        assert ret == 0
+
+    def test_strict_clean_file_returns_zero(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=value\n")
+        ret = run(["lint", "--env-file", str(env_file), "--strict"])
+        assert ret == 0
+
+    def test_strict_implies_lint_level_warning(
+        self,
+        capsys: pytest.CaptureFixture[str],
+        tmp_path,
+    ):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=${UNDEFINED_STRICT_VAR}\n")
+        run(["lint", "--env-file", str(env_file), "--strict"])
+        err = capsys.readouterr().err
+        assert "[warning]" in err
