@@ -7,7 +7,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Callable, ClassVar, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ def _toml_line_numbers(content: str, keys: Iterable[str]) -> Dict[str, int]:
     return result
 
 
-def _yaml_line_numbers(content: str) -> Dict[str, int]:
+def _yaml_line_numbers(content: str, keys: Iterable[str] = ()) -> Dict[str, int]:
     try:
         import yaml
     except ImportError:
@@ -101,6 +101,12 @@ class ParseMessage:
 
 
 class EnvParser:
+    _LOADERS: ClassVar[Dict[str, str]] = {
+        ".json": "load_json_file",
+        ".yaml": "load_yaml_file",
+        ".toml": "load_toml_file",
+    }
+
     def __init__(self, options: ParseOptions) -> None:
         self.options: ParseOptions = options
         self.raw_environ: Dict[str, str] = {}
@@ -109,15 +115,8 @@ class EnvParser:
         self.messages: List[ParseMessage] = []
 
     def parse(self, env_file: Union[str, Path]) -> EnvParser:
-        filename = env_file if isinstance(env_file, str) else env_file.name
-        extension = Path(filename).suffix
-
-        LOADERS = {
-            ".json": self.load_json_file,
-            ".yaml": self.load_yaml_file,
-            ".toml": self.load_toml_file,
-        }
-        loader = LOADERS.get(extension, self.load_env_file)
+        extension = Path(env_file).suffix
+        loader = getattr(self, self._LOADERS.get(extension, "load_env_file"))
         environ = loader(env_file)
         # skip not prefixed if prefix used
         for line_number, key, value in environ:
@@ -324,12 +323,20 @@ class EnvParser:
             environ.append((ln, key, value_str))
         return environ
 
-    def load_json_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
-        with open(env_file) as f:
+    def _load_structured(
+        self,
+        env_file: Union[str, Path],
+        fmt: str,
+        parse: Callable[[str], object],
+        line_numbers: Callable[[str, Iterable[str]], Dict[str, int]],
+    ) -> List[Tuple[int, str, str]]:
+        with open(env_file, encoding="utf-8") as f:
             content = f.read()
-        data = json.loads(content)
-        root = self._check_structured_root(data, "JSON")
-        return self._iter_structured(root, "JSON", _json_line_numbers(content, root.keys()))
+        root = self._check_structured_root(parse(content), fmt)
+        return self._iter_structured(root, fmt, line_numbers(content, root.keys()))
+
+    def load_json_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
+        return self._load_structured(env_file, "JSON", json.loads, _json_line_numbers)
 
     def load_yaml_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
         try:
@@ -337,11 +344,7 @@ class EnvParser:
         except ImportError:
             sys.stderr.write("ERROR!!! To use YAML install runenv[yaml]\n")
             sys.exit(1)
-        with open(env_file, "r") as f:
-            content = f.read()
-        data = yaml.safe_load(content)
-        root = self._check_structured_root(data, "YAML")
-        return self._iter_structured(root, "YAML", _yaml_line_numbers(content))
+        return self._load_structured(env_file, "YAML", yaml.safe_load, _yaml_line_numbers)
 
     def load_toml_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
         if sys.version_info >= (3, 11):
@@ -352,12 +355,7 @@ class EnvParser:
             except ImportError:
                 sys.stderr.write("ERROR!!! To use TOML install runenv[toml]\n")
                 sys.exit(1)
-        with open(env_file, "rb") as f:
-            raw = f.read()
-        content = raw.decode("utf-8")
-        data = tomli.loads(content)
-        root = self._check_structured_root(data, "TOML")
-        return self._iter_structured(root, "TOML", _toml_line_numbers(content, root.keys()))
+        return self._load_structured(env_file, "TOML", tomli.loads, _toml_line_numbers)
 
 
 def substitute_variables(
