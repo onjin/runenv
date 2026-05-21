@@ -30,6 +30,8 @@ Manage application settings with ease using `runenv`, a lightweight tool inspire
 - [Framework Integrations](#framework-integrations)
 - [Parsing Behaviour](#parsing-behaviour)
   - [Variable Expansion](#variable-expansion)
+  - [Quoting and Escape Sequences](#quoting-and-escape-sequences)
+  - [Required Variables](#required-variables)
 - [Sample `.env` File](#sample-env-file)
 - [Similar Tools](#similar-tools)
 
@@ -43,6 +45,9 @@ Manage application settings with ease using `runenv`, a lightweight tool inspire
 - ⚙️ **Multiple Formats**: Use plain `.env`, `.env.json`, `.env.toml`, or `.env.yaml`
 - ⚙️ **Autodetect Env File**: Looking for `.env`, `.env.json`, `.env.toml`, and `.env.yaml`
 - 🔧 **Parameter Expansion**: Bash-style `${VAR:-default}`, `${VAR:?msg}`, `${VAR:+alt}` operators.
+- ✏️ **Escape Sequences**: `\n`, `\t`, `\\`, `\"` in double-quoted values; `$$` for a literal `$`.
+- 📄 **Multi-line Values**: Triple-quoted heredoc syntax (`"""..."""` / `'''...'''`).
+- 🔒 **Required Variables**: `# @required VAR` declarations fail fast on missing config.
 - 🧩 **Framework-Friendly**: Works well with Django, Flask, FastAPI, and more.
 
 ---
@@ -64,8 +69,9 @@ Run any command with a specified environment:
 ```bash
 runenv run --env-file .env.dev -- python manage.py runserver
 runenv run --env-file .env.prod -- uvicorn app:app --host 0.0.0.0
-runenv list [--env-file .env] # view parsed variables
-runenv lint [--env-file .env] # check common errors in env file
+runenv list [--env-file .env]           # view parsed variables
+runenv lint [--env-file .env]           # check for errors in env file
+runenv lint --strict [--env-file .env]  # also warn on ambient/undefined refs
 ```
 
 ---
@@ -190,32 +196,103 @@ Duplicate keys are **not** an error — the last value in the file takes effect,
 
 The `:?` operator causes `runenv run` / `runenv list` to exit non-zero and `runenv lint` to report an error-level message with the line number where the variable is declared.
 
+### Quoting and Escape Sequences
+
+| Style | Escape processing | Variable expansion |
+|-------|------------------|--------------------|
+| Unquoted `VAR=value` | None | Yes |
+| Single-quoted `VAR='value'` | None | Yes |
+| Double-quoted `VAR="value"` | `\n` `\t` `\r` `\\` `\"` | Yes |
+| Triple double-quoted `VAR="""..."""` | Same as double-quoted | Yes |
+| Triple single-quoted `VAR='''...'''` | None | Yes |
+
+Double-quoted values process the standard escape sequences:
+
+```ini
+GREETING="Hello\tWorld\n"   # tab + newline
+PATH_VAL="C:\\Users\\name"  # literal backslashes
+QUOTED="say \"hi\""         # embedded double quote
+```
+
+Use `$$` anywhere to emit a literal `$` without triggering variable expansion:
+
+```ini
+PGSERVICE=$$HOME/.pgservice  # value: $HOME/.pgservice
+TEMPLATE=price: $$${AMOUNT}  # literal $ followed by expanded AMOUNT
+```
+
+Triple-quoted values span multiple lines — useful for certificates, JSON blobs, or any multi-line secret:
+
+```ini
+PRIVATE_KEY="""
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEA...
+-----END RSA PRIVATE KEY-----
+"""
+
+RAW_TEXT='''
+no \n escape processing here
+$$HOME is literal too
+'''
+```
+
+### Required Variables
+
+Declare variables that must be present and non-empty with `# @required`:
+
+```ini
+# @required DATABASE_URL, SECRET_KEY
+# @required PORT
+
+DATABASE_URL=postgresql://localhost/mydb
+SECRET_KEY=${APP_SECRET:?APP_SECRET must be set}
+PORT=${PORT:-8000}
+```
+
+If any declared variable is missing or empty after full expansion, `runenv lint` reports an error at the directive's line number and `runenv run` exits non-zero. Multiple names can appear on one line (comma-separated) or across multiple directives.
+
+`# @required` and `${VAR:?msg}` are complementary, not duplicates. Use `# @required` to declare top-level contracts on the keys your application needs. Use `${SOURCE:?msg}` when building a value from another variable and you want a specific error message that names the source. Don't combine both on the same variable.
+
 ---
 
 ## Sample `.env` File
 
 ```ini
-# Basic
-DEBUG=1
-PORT=8000
+# Declare required variables — runenv fails fast if any are missing
+# @required DATABASE_URL, SECRET_KEY
 
-# export keyword is accepted (and discarded) for shell-source compatibility
+# export keyword accepted for shell-source compatibility
 export HOST=localhost
+PORT=${PORT:-8000}
 URL=http://${HOST}:${PORT}
 
-# Default values via parameter expansion
-CACHE_URL=${REDIS_URL:-redis://localhost:6379}
-LOG_LEVEL=${LOG_LEVEL-info}
+# Parameter expansion
+CACHE_URL=${REDIS_URL:-redis://localhost:6379}   # default if unset/empty
+LOG_LEVEL=${LOG_LEVEL-info}                      # default only if unset
+FEATURE_HEADER=${FEATURE_FLAG:+X-Feature: on}   # set only when flag is on
 
-# Required variable — fails with a clear message if unset
-SECRET=${APP_SECRET:?APP_SECRET must be set before running}
+# :? is for inline interpolation guards (different from # @required):
+# it fails with a custom message pointing at the *source* variable
+DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be set}
+SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set}
 
-# Conditional value — only set when FEATURE_FLAG is enabled
-FEATURE_HEADER=${FEATURE_FLAG:+X-Feature: on}
+# Escape sequences in double-quoted strings
+GREETING="Hello\tWorld"
+WINDOWS_PATH="C:\\Users\\deploy"
 
-# Quotes and comments
+# Literal $ with $$ — no variable expansion triggered
+PGSERVICE=$$HOME/.pgservice
+
+# Multi-line heredoc value (triple-quoted)
+BANNER="""
+Welcome to MyApp
+Running on ${HOST}:${PORT}
+"""
+
+# Quotes and inline comments
 EMAIL="admin@example.com" # Inline comment
 TOKEN='s3cr3t'
+DEBUG=1
 ```
 
 ---

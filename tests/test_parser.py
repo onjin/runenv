@@ -396,13 +396,25 @@ class TestCircularReferences:
         assert "A" in warnings[0].message
         assert "B" in warnings[0].message
 
-    def test_self_reference_reported_as_warning(self, tmp_path):
+    def test_self_reference_not_reported_as_circular(self, tmp_path):
         env_file = tmp_path / ".env"
         env_file.write_text("A=${A}\n")
         messages = lint_env_file(env_file, ParseOptions())
-        warnings = [m for m in messages if m.level == "warning" and "circular" in m.message]
-        assert len(warnings) == 1
-        assert "A" in warnings[0].message
+        circular = [m for m in messages if "circular" in m.message]
+        assert circular == []
+
+    def test_self_reference_with_default_uses_default(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("PORT=${PORT:-8000}\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["PORT"] == "8000"
+
+    def test_self_reference_with_default_uses_os_env(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("PORT", "9999")
+        env_file = tmp_path / ".env"
+        env_file.write_text("PORT=${PORT:-8000}\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["PORT"] == "9999"
 
     def test_longer_cycle_reported(self, tmp_path):
         env_file = tmp_path / ".env"
@@ -858,3 +870,81 @@ class TestStrictMode:
         env_file.write_text("KEY=${MISSING:-fallback}\n")
         messages = lint_env_file(env_file, ParseOptions(strict=True))
         assert not any("undefined" in m.message or "resolved from environment" in m.message for m in messages)
+
+
+class TestRequiredDirective:
+    def test_required_var_present_no_error(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @required PORT\nPORT=8080\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["PORT"] == "8080"
+
+    def test_required_var_missing_raises(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @required PORT\nHOST=localhost\n")
+        with pytest.raises(ValueError, match="PORT"):
+            parse_env_file(env_file, ParseOptions())
+
+    def test_required_var_missing_emits_error_message(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @required PORT\nHOST=localhost\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert len(errors) == 1
+        assert "PORT" in errors[0].message
+
+    def test_required_line_number_reported(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("HOST=localhost\n# @required MISSING\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert errors[0].line_number == 2
+
+    def test_required_multiple_vars_comma_separated(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @required HOST, PORT\nHOST=localhost\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert len(errors) == 1
+        assert "PORT" in errors[0].message
+
+    def test_required_multiple_directives(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @required HOST\n# @required PORT\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert len(errors) == 2
+
+    def test_required_empty_value_triggers_error(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @required PORT\nPORT=\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert len(errors) == 1
+        assert "PORT" in errors[0].message
+
+    def test_required_all_present_no_errors(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @required HOST, PORT\nHOST=localhost\nPORT=8080\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        assert not any(m.level == "error" for m in messages)
+
+    def test_required_satisfied_by_interpolation(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("DEFAULT_PORT", "9000")
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @required PORT\nPORT=${DEFAULT_PORT}\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["PORT"] == "9000"
+
+    def test_required_with_spaces_in_names(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @required  HOST ,  PORT  \nHOST=h\nPORT=1\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["HOST"] == "h"
+        assert result["PORT"] == "1"
+
+    def test_regular_comments_not_parsed_as_required(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# just a comment\nFOO=bar\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result == {"FOO": "bar"}

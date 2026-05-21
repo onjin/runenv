@@ -16,6 +16,7 @@ VARIABLE_REFERENCE_REGEX = re.compile(r"\$\{(\w+)(?:(:-|:[\?+]|-)([^}]*))?\}")
 POSIX_NAME_REGEX = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 EXPORT_BARE_REGEX = re.compile(r'^\s*export\s+[\w.]+\s*$')
 TRIPLE_QUOTE_START_REGEX = re.compile(r'^\s*(?:export\s+)?([\w.]+)\s*=\s*("""|\'\'\')(.*)')
+REQUIRED_DIRECTIVE_REGEX = re.compile(r'^#\s*@required\s+(.+)$')
 
 _DOLLAR_PLACEHOLDER = "\x00"
 
@@ -111,6 +112,7 @@ class EnvParser:
         self.options: ParseOptions = options
         self.raw_environ: Dict[str, str] = {}
         self._line_numbers: Dict[str, int] = {}
+        self._required: List[Tuple[int, str]] = []
         self.final_environ: Dict[str, str] = {}
         self.messages: List[ParseMessage] = []
 
@@ -169,6 +171,7 @@ class EnvParser:
                     strict=self.options.strict,
                     messages=self.messages,
                     line_number=self._line_numbers.get(key, 0),
+                    exclude={key},
                 )
             except ValueError as exc:
                 msg = str(exc)
@@ -182,11 +185,25 @@ class EnvParser:
                 )
         if expansion_errors:
             raise ValueError(expansion_errors[0])
+
+        required_errors: List[str] = []
+        for req_line, var_name in self._required:
+            if not self.final_environ.get(var_name):
+                msg = f"required variable '{var_name}' is not set"
+                required_errors.append(msg)
+                self.messages.append(ParseMessage(
+                    line_number=req_line,
+                    level="error",
+                    message=msg,
+                ))
+        if required_errors:
+            raise ValueError(required_errors[0])
+
         return self
 
     def _find_cycles(self) -> None:
         deps: Dict[str, Set[str]] = {
-            key: {m[0] for m in VARIABLE_REFERENCE_REGEX.findall(value)} & self.raw_environ.keys()
+            key: ({m[0] for m in VARIABLE_REFERENCE_REGEX.findall(value)} - {key}) & self.raw_environ.keys()
             for key, value in self.raw_environ.items()
         }
 
@@ -229,7 +246,14 @@ class EnvParser:
             line = raw_line.rstrip(os.linesep).strip()
             idx += 1
 
-            if not line or line.startswith("#"):
+            if not line:
+                continue
+            if line.startswith("#"):
+                req_match = REQUIRED_DIRECTIVE_REGEX.match(line)
+                if req_match:
+                    for name in (n.strip() for n in req_match.group(1).split(",")):
+                        if name:
+                            self._required.append((line_number, name))
                 continue
 
             if EXPORT_BARE_REGEX.match(line):
@@ -364,13 +388,14 @@ def substitute_variables(
     strict: bool = False,
     messages: Optional[List[ParseMessage]] = None,
     line_number: int = 0,
+    exclude: Optional[Set[str]] = None,
 ) -> str:
     def replace_match(match: re.Match[str]) -> str:
         name = match.group(1)
         op = match.group(2)
         operand = match.group(3) or ""
 
-        in_env_vars = name in env_vars
+        in_env_vars = name in env_vars and (exclude is None or name not in exclude)
         in_os_environ = name in os.environ
         if in_env_vars:
             resolved: Optional[str] = str(env_vars[name])
