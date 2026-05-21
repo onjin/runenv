@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.4.3 (2026-05-21)
+
+### Features
+
+- **cli:** add --strict mode for non-permissive env validation Adds strict: and lint_env APIs.,bool to ParseOptions,create_env
+
+### Fixes
+
+- **cli:** route error messages to stderr, remove double file resolution 
+
+### Refactors
+
+- **cli:** extract argparse helpers to eliminate subparser duplication 
+- **cli:** reduce duplication in options, lint check, and env resolution 
+- **cli:** extract add_stdout_handler to shared _utils module 
+- **misc:** a few small fixes like, explicite regexp, usage of os.stat, and log msgs, comments 
+- **parser:** unify structured loaders and fix per-call LOADERS dict 
+
 ## v1.4.2 (2026-05-19)
 
 ### Features
