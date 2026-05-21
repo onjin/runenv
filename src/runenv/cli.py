@@ -108,6 +108,43 @@ def apply_lint_policy(
     return 0
 
 
+def _add_env_args(p: argparse.ArgumentParser, *, env_file_help: str = "Environment file to load") -> None:
+    p.add_argument("--env-file", help=env_file_help, type=str)
+    p.add_argument("-p", "--prefix", action="store", type=str, help="Load only variables with given prefix")
+    p.add_argument(
+        "-s", "--strip-prefix", action="store_true",
+        help="Strip prefix given with --prefix from environment variables names",
+    )
+    p.add_argument(
+        "--search-parent", type=int, default=0,
+        help="How many parent dirs search for .env[.json,.toml,.yaml] files; default 0",
+    )
+
+
+def _add_lint_args(
+    p: argparse.ArgumentParser,
+    *,
+    default_lint_level: str,
+    default_fail_on: str,
+) -> None:
+    p.add_argument(
+        "--lint-level",
+        choices=["none", "info", "warning", "error"],
+        default=default_lint_level,
+        help=f"Minimum message level to print to stderr (default: {default_lint_level})",
+    )
+    p.add_argument(
+        "--fail-on",
+        choices=["none", "info", "warning", "error"],
+        default=default_fail_on,
+        help=f"Minimum message level that causes a non-zero exit (default: {default_fail_on})",
+    )
+    p.add_argument(
+        "--strict", action="store_true",
+        help="Enable strict mode: warn on undefined/ambient variable references, treat duplicates as errors; implies --fail-on warning",
+    )
+
+
 def _run_lint_check(options: EnvCMDOptions) -> int:
     if options.lint_level == "none" and options.fail_on == "none":
         return 0
@@ -225,140 +262,19 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
     # --- run command ---
     run_parser = subparsers.add_parser("run", help="Run a command with .env loaded")
     run_parser.add_argument("command", help="Command to run with loaded environment", nargs=argparse.REMAINDER)
-    run_parser.add_argument(
-        "--env-file",
-        help="Environment file to load",
-        type=str,
-    )
-    run_parser.add_argument(
-        "-p",
-        "--prefix",
-        action="store",
-        type=str,
-        help="Load only variables with given prefix",
-    )
-    run_parser.add_argument(
-        "-s",
-        "--strip-prefix",
-        action="store_true",
-        help="Strip prefix given with --prefix from environment variables names",
-    )
-    run_parser.add_argument(
-        "--search-parent",
-        type=int,
-        default=0,
-        help="How many parent dirs search for .env[.json,.toml,.yaml] files; default 0",
-    )
-    run_parser.add_argument(
-        "--lint-level",
-        choices=["none", "info", "warning", "error"],
-        default="none",
-        help="Minimum message level to print to stderr (default: none)",
-    )
-    run_parser.add_argument(
-        "--fail-on",
-        choices=["none", "info", "warning", "error"],
-        default="none",
-        help="Minimum message level that causes a non-zero exit before running the command (default: none)",
-    )
-    run_parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="Enable strict mode: warn on undefined/ambient variable references, treat duplicates as errors; implies --fail-on warning",
-    )
+    _add_env_args(run_parser)
+    _add_lint_args(run_parser, default_lint_level="none", default_fail_on="none")
 
     # --- list command ---
     list_parser = subparsers.add_parser("list", help="List parsed variables")
-    list_parser.add_argument(
-        "--env-file",
-        help="Environment file to load",
-        type=str,
-    )
-    list_parser.add_argument(
-        "-p",
-        "--prefix",
-        action="store",
-        type=str,
-        help="Load only variables with given prefix",
-    )
-    list_parser.add_argument(
-        "-s",
-        "--strip-prefix",
-        action="store_true",
-        help="Strip prefix given with --prefix from environment variables names",
-    )
-    list_parser.add_argument(
-        "--search-parent",
-        type=int,
-        default=0,
-        help="How many parent dirs search for .env[.json,.toml,.yaml] files; default 0",
-    )
-    list_parser.add_argument(
-        "--lint-level",
-        choices=["none", "info", "warning", "error"],
-        default="none",
-        help="Minimum message level to print to stderr (default: none)",
-    )
-    list_parser.add_argument(
-        "--fail-on",
-        choices=["none", "info", "warning", "error"],
-        default="none",
-        help="Minimum message level that causes a non-zero exit before listing (default: none)",
-    )
-    list_parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="Enable strict mode: warn on undefined/ambient variable references, treat duplicates as errors; implies --fail-on warning",
-    )
+    _add_env_args(list_parser)
+    _add_lint_args(list_parser, default_lint_level="none", default_fail_on="none")
 
     # --- lint command ---
     lint_parser = subparsers.add_parser("lint", help="Lint env file")
-    lint_parser.add_argument(
-        "--env-file",
-        help="Environment file to lint",
-        type=str,
-    )
-    lint_parser.add_argument(
-        "-p",
-        "--prefix",
-        action="store",
-        type=str,
-        help="Load only variables with given prefix",
-    )
-    lint_parser.add_argument(
-        "-s",
-        "--strip-prefix",
-        action="store_true",
-        help="Strip prefix given with --prefix from environment variables names",
-    )
-    lint_parser.add_argument(
-        "--search-parent",
-        type=int,
-        default=0,
-        help="How many parent dirs search for .env[.json,.toml,.yaml] files; default 0",
-    )
-    lint_parser.add_argument(
-        "--as-json",
-        action="store_true",
-        help="Return json instead log lines",
-    )
-    lint_parser.add_argument(
-        "--lint-level",
-        choices=["none", "info", "warning", "error"],
-        default="info",
-        help="Minimum message level to print (default: info)",
-    )
-    lint_parser.add_argument(
-        "--fail-on",
-        choices=["none", "info", "warning", "error"],
-        default="error",
-        help="Minimum message level that causes a non-zero exit (default: error)",
-    )
-    lint_parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="Enable strict mode: warn on undefined/ambient variable references, treat duplicates as errors; implies --fail-on warning",
-    )
+    _add_env_args(lint_parser, env_file_help="Environment file to lint")
+    lint_parser.add_argument("--as-json", action="store_true", help="Return json instead log lines")
+    _add_lint_args(lint_parser, default_lint_level="info", default_fail_on="error")
 
     args = parser.parse_args(argv)
 
