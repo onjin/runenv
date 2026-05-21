@@ -17,6 +17,7 @@ from textwrap import dedent
 from typing import List, Optional, Sequence, Tuple, Union, cast
 
 from runenv.__about__ import __version__
+from runenv._utils import add_stdout_handler
 from runenv.api import create_env, find_env_file, lint_env
 from runenv.legacy import run_legacy, run_legacy_parser
 from runenv.parser import ParseMessage
@@ -38,24 +39,6 @@ def _strict_lint_settings(strict: bool, fail_on: str, lint_level: str) -> Tuple[
         return fail_on, lint_level
     return _strict_clamp(fail_on), _strict_clamp(lint_level)
 
-
-def add_stdout_handler(verbosity: int) -> None:
-    """Adds stdout handler with given verbosity to logger.
-
-    Args:
-        logger: python logger instance
-        verbosity: target verbosity
-                          1 - ERROR
-                          2 - INFO
-                          3 - DEBUG
-
-    Usage:
-        add_stdout_handler(verbosity=3)
-
-    """
-    v_map = {1: logging.ERROR, 2: logging.INFO, 3: logging.DEBUG}
-    level = v_map.get(verbosity, 1)
-    logging.basicConfig(level=level)
 
 
 @dataclass
