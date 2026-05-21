@@ -24,7 +24,6 @@ from runenv.parser import ParseMessage
 logger = logging.getLogger(__name__)
 
 LEVEL_ORDER = {"none": 0, "info": 1, "warning": 2, "error": 3}
-_LEVEL_BY_ORDER = {v: k for k, v in LEVEL_ORDER.items()}
 
 
 def _strict_clamp(level: str) -> str:
@@ -100,7 +99,7 @@ class LintCMDOptions(CLIOptions):
 
 
 def fail(msg: str, returncode: int = 1) -> None:
-    sys.stdout.write(f"{msg}\n")
+    sys.stderr.write(f"{msg}\n")
     sys.exit(returncode)
 
 
@@ -400,10 +399,10 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         fail_on, lint_level = _strict_lint_settings(args.strict, args.fail_on, args.lint_level)
         opts = RunCMDOptions(
             verbosity=args.verbosity,
-            env_file=args.env_file,
+            env_file=str(env_file),
             prefix=args.prefix,
             strip_prefix=args.strip_prefix,
-            search_parent=args.search_parent,
+            search_parent=0,
             command=args.command,
             lint_level=lint_level,
             fail_on=fail_on,
@@ -420,10 +419,10 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         fail_on, lint_level = _strict_lint_settings(args.strict, args.fail_on, args.lint_level)
         opts = ListCMDOptions(
             verbosity=args.verbosity,
-            env_file=args.env_file,
+            env_file=str(env_file),
             prefix=args.prefix,
             strip_prefix=args.strip_prefix,
-            search_parent=args.search_parent,
+            search_parent=0,
             lint_level=lint_level,
             fail_on=fail_on,
             strict=args.strict,
@@ -439,10 +438,10 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         fail_on, lint_level = _strict_lint_settings(args.strict, args.fail_on, args.lint_level)
         opts = LintCMDOptions(
             verbosity=args.verbosity,
-            env_file=args.env_file,
+            env_file=str(env_file),
             prefix=args.prefix,
             strip_prefix=args.strip_prefix,
-            search_parent=args.search_parent,
+            search_parent=0,
             as_json=args.as_json,
             lint_level=lint_level,
             fail_on=fail_on,

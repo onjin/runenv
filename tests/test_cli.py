@@ -43,9 +43,9 @@ def test_run_nonexistent_command_shows_backtick_wrapped_name(
 ) -> None:
     with pytest.raises(SystemExit):
         run(["run", "--env-file", TEST_FILE, "--", "nonexistent_cmd_xyz"])
-    out = capsys.readouterr().out
-    assert "does not exist" in out
-    assert "`" in out
+    err = capsys.readouterr().err
+    assert "does not exist" in err
+    assert "`" in err
 
 
 def test_run_default_is_silent(
@@ -170,9 +170,9 @@ def test_missing_explicit_env_file_shows_filename(
     monkeypatch.chdir(tmp_path)
     with pytest.raises(SystemExit):
         run([subcommand, "--env-file", "missing.env", sys.executable] if subcommand == "run" else [subcommand, "--env-file", "missing.env"])
-    out = capsys.readouterr().out
-    assert "missing.env" in out
-    assert "None" not in out
+    err = capsys.readouterr().err
+    assert "missing.env" in err
+    assert "None" not in err
 
 
 def test_bare_runenv_prints_help(
@@ -197,9 +197,9 @@ def test_no_env_file_found_shows_searched_names(
     monkeypatch.chdir(tmp_path)
     with pytest.raises(SystemExit):
         run([subcommand, sys.executable] if subcommand == "run" else [subcommand])
-    out = capsys.readouterr().out
-    assert ".env" in out
-    assert "None" not in out
+    err = capsys.readouterr().err
+    assert ".env" in err
+    assert "None" not in err
 
 
 def test_lint_as_json_outputs_valid_json(
@@ -284,8 +284,8 @@ def test_value_error_from_api_caught_at_cli_boundary(
         run(["list", "--env-file", str(env_file)])
 
     assert exc_info.value.code == 1
-    out = capsys.readouterr().out
-    assert "No env file found" in out
+    err = capsys.readouterr().err
+    assert "No env file found" in err
 
 
 class TestStrictCLI:

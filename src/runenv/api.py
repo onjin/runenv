@@ -65,9 +65,8 @@ def load_env(
     if "_RUNENV_WRAPPED" in os.environ and not force:
         return
 
-    os.environ.update(create_env(env_file, prefix=prefix, strip_prefix=strip_prefix))
+    os.environ.update(parse_env_file(env_file, ParseOptions(prefix=prefix, strip_prefix=strip_prefix)))
     logger.info("env file %s loaded", getattr(env_file, "name", str(env_file)))
-    return
 
 
 def lint_env(
