@@ -281,7 +281,7 @@ class EnvParser:
                 if match.group(2) is not None:
                     value = _process_escape_sequences(match.group(2))
                 else:
-                    value = next(g for g in match.groups()[1:] if g is not None)
+                    value = match.group(3) if match.group(3) is not None else (match.group(4) or "")
                 environ.append((line_number, key, value))
             else:
                 msg = "line not matched"
@@ -409,7 +409,7 @@ def substitute_variables(
             return operand if is_nonempty else ""
         return ""
 
-    logger.debug(f"VALUE: {value} , type {type(value)}")
+    logger.debug("VALUE: %s, type %s", value, type(value))
     escaped = str(value).replace("$$", _DOLLAR_PLACEHOLDER)
     result = VARIABLE_REFERENCE_REGEX.sub(replace_match, escaped)
     return result.replace(_DOLLAR_PLACEHOLDER, "$")

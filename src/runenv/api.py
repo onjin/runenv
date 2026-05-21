@@ -56,7 +56,6 @@ def load_env(
 
     env_file = find_env_file(Path.cwd(), search_parent, filename=env_file)
 
-    # In `load_env` we will not fail if file does not exists
     if not env_file:
         if require_env_file:
             raise ValueError("No env file found")

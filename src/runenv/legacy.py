@@ -101,7 +101,7 @@ def run_legacy(argv: Optional[Sequence[str]] = None) -> int:
         if cmd is None or not os.path.exists(cmd):
             sys.stdout.write(f"[legacy] File `{args.command}` does not exist\n")
             sys.exit(1)
-        if not (stat.S_IXUSR & os.stat(cmd)[stat.ST_MODE]):
+        if not (os.stat(cmd).st_mode & stat.S_IXUSR):
             sys.stdout.write(f"[legacy] File `{args.command}` is not executable\n")
             sys.exit(1)
         return subprocess.check_call([cmd] + argv, env=os.environ)  # noqa: RUF005, S603
