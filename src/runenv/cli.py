@@ -40,50 +40,50 @@ def _strict_lint_settings(strict: bool, fail_on: str, lint_level: str) -> Tuple[
     return _strict_clamp(fail_on), _strict_clamp(lint_level)
 
 
-
 @dataclass
 class CLIOptions:
     verbosity: int
 
 
 @dataclass
-class RunCMDOptions(CLIOptions):
+class EnvCMDOptions(CLIOptions):
     env_file: str
     prefix: Union[str, None]
     strip_prefix: bool
     search_parent: int
+    lint_level: str
+    fail_on: str
+    strict: bool
+
+
+@dataclass
+class RunCMDOptions(EnvCMDOptions):
     command: List[str]
-    lint_level: str
-    fail_on: str
-    strict: bool
 
 
 @dataclass
-class ListCMDOptions(CLIOptions):
-    env_file: str
-    prefix: Union[str, None]
-    strip_prefix: bool
-    search_parent: int
-    lint_level: str
-    fail_on: str
-    strict: bool
+class ListCMDOptions(EnvCMDOptions):
+    pass
 
 
 @dataclass
-class LintCMDOptions(CLIOptions):
-    env_file: str
-    prefix: Union[str, None]
-    strip_prefix: bool
-    search_parent: int
+class LintCMDOptions(EnvCMDOptions):
     as_json: bool
-    lint_level: str
-    fail_on: str
-    strict: bool
 
 
 def fail(msg: str, returncode: int = 1) -> None:
     sys.stderr.write(f"{msg}\n")
     sys.exit(returncode)
+
+
+def _require_env_file(search_parent: int, env_file: Optional[str]) -> Path:
+    resolved = find_env_file(Path.cwd(), search_parent, env_file)
+    if not resolved:
+        if env_file:
+            fail(f"ERROR!!! Environment file `{env_file}` does not exist", 1)
+        else:
+            fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
+    return resolved  # type: ignore[return-value]
 
 
 def apply_lint_policy(
@@ -108,20 +108,25 @@ def apply_lint_policy(
     return 0
 
 
+def _run_lint_check(options: EnvCMDOptions) -> int:
+    if options.lint_level == "none" and options.fail_on == "none":
+        return 0
+    messages = lint_env(
+        options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
+        search_parent=options.search_parent, strict=options.strict,
+    )
+    return apply_lint_policy(messages, options.lint_level, options.fail_on)
+
+
 def handle_run_subcommand(options: RunCMDOptions) -> Union[int, None]:
     cmd = options.command[1:] if options.command and options.command[0] == "--" else options.command[:]
     if not cmd:
         sys.stdout.write("Missing command to execute after 'runenv run -- <command> [params]'\n")
         sys.exit(1)
 
-    if options.lint_level != "none" or options.fail_on != "none":
-        messages = lint_env(
-            options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
-            search_parent=options.search_parent, strict=options.strict,
-        )
-        rc = apply_lint_policy(messages, options.lint_level, options.fail_on)
-        if rc != 0:
-            return rc
+    rc = _run_lint_check(options)
+    if rc != 0:
+        return rc
 
     loaded_env = create_env(
         options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
@@ -146,14 +151,9 @@ def handle_run_subcommand(options: RunCMDOptions) -> Union[int, None]:
 
 
 def handle_list_subcommand(options: ListCMDOptions) -> int:
-    if options.lint_level != "none" or options.fail_on != "none":
-        messages = lint_env(
-            options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
-            search_parent=options.search_parent, strict=options.strict,
-        )
-        rc = apply_lint_policy(messages, options.lint_level, options.fail_on)
-        if rc != 0:
-            return rc
+    rc = _run_lint_check(options)
+    if rc != 0:
+        return rc
 
     loaded_env = create_env(
         options.env_file, prefix=options.prefix, strip_prefix=options.strip_prefix,
@@ -362,7 +362,7 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
 
     args = parser.parse_args(argv)
 
-    add_stdout_handler(cast("int", args.verbosity))
+    add_stdout_handler(cast(int, args.verbosity))
 
     logger.debug("args: %s", args)
     subcommand: str = args.subcommand
@@ -373,12 +373,7 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
 
     if subcommand == "run":
         handler = handle_run_subcommand
-        env_file = find_env_file(Path.cwd(), args.search_parent, args.env_file)
-        if not env_file:
-            if args.env_file:
-                fail(f"ERROR!!! Environment file `{args.env_file}` does not exist", 1)
-            else:
-                fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
+        env_file = _require_env_file(args.search_parent, args.env_file)
         fail_on, lint_level = _strict_lint_settings(args.strict, args.fail_on, args.lint_level)
         opts = RunCMDOptions(
             verbosity=args.verbosity,
@@ -393,12 +388,7 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         )
     elif subcommand == "list":
         handler = handle_list_subcommand
-        env_file = find_env_file(Path.cwd(), args.search_parent, args.env_file)
-        if not env_file:
-            if args.env_file:
-                fail(f"ERROR!!! Environment file `{args.env_file}` does not exist", 1)
-            else:
-                fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
+        env_file = _require_env_file(args.search_parent, args.env_file)
         fail_on, lint_level = _strict_lint_settings(args.strict, args.fail_on, args.lint_level)
         opts = ListCMDOptions(
             verbosity=args.verbosity,
@@ -412,12 +402,7 @@ def run(argv: Optional[Sequence[str]] = None) -> Union[int, None]:
         )
     elif subcommand == "lint":
         handler = handle_lint_subcommand
-        env_file = find_env_file(Path.cwd(), args.search_parent, args.env_file)
-        if not env_file:
-            if args.env_file:
-                fail(f"ERROR!!! Environment file `{args.env_file}` does not exist", 1)
-            else:
-                fail(f"No .env / .env.json / .env.toml / .env.yaml found in {Path.cwd()}", 1)
+        env_file = _require_env_file(args.search_parent, args.env_file)
         fail_on, lint_level = _strict_lint_settings(args.strict, args.fail_on, args.lint_level)
         opts = LintCMDOptions(
             verbosity=args.verbosity,
