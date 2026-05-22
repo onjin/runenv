@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.4.4 (2026-05-22)
+
+### Features
+
+- **parser:** add @include directive and document inline-comment behaviour 
+- **parser:** add escape sequences, heredoc, $$ escape, @required directive; fix self-reference expansion 
+
 ## v1.4.3 (2026-05-21)
 
 ### Features
