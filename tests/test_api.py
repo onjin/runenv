@@ -4,6 +4,7 @@ from unittest import mock
 import pytest
 
 from runenv import create_env, load_env
+from runenv.api import find_env_file, lint_env
 
 from . import TESTS_DIR
 
@@ -175,3 +176,172 @@ class TestApi:
         load_env(env_file=env_file, search_parent=2)
         assert "GRAND_PARENT" in os.environ
         assert os.environ.get("GRAND_PARENT") == "3"
+
+
+class TestFindEnvFile:
+    def test_finds_dotenv(self, tmp_path):
+        (tmp_path / ".env").write_text("A=1\n")
+        result = find_env_file(tmp_path)
+        assert result == tmp_path / ".env"
+
+    def test_finds_json_when_no_dotenv(self, tmp_path):
+        (tmp_path / ".env.json").write_text('{"A": "1"}')
+        result = find_env_file(tmp_path)
+        assert result == tmp_path / ".env.json"
+
+    def test_finds_toml_when_no_dotenv_or_json(self, tmp_path):
+        (tmp_path / ".env.toml").write_text('A = "1"\n')
+        result = find_env_file(tmp_path)
+        assert result == tmp_path / ".env.toml"
+
+    def test_finds_yaml_last(self, tmp_path):
+        (tmp_path / ".env.yaml").write_text("A: 1\n")
+        result = find_env_file(tmp_path)
+        assert result == tmp_path / ".env.yaml"
+
+    def test_dotenv_takes_priority_over_json(self, tmp_path):
+        (tmp_path / ".env").write_text("A=1\n")
+        (tmp_path / ".env.json").write_text('{"A": "2"}')
+        result = find_env_file(tmp_path)
+        assert result == tmp_path / ".env"
+
+    def test_returns_none_when_nothing_found(self, tmp_path):
+        result = find_env_file(tmp_path)
+        assert result is None
+
+    def test_custom_filename(self, tmp_path):
+        (tmp_path / "prod.env").write_text("A=1\n")
+        result = find_env_file(tmp_path, filename="prod.env")
+        assert result == tmp_path / "prod.env"
+
+    def test_custom_filename_not_found_returns_none(self, tmp_path):
+        result = find_env_file(tmp_path, filename="missing.env")
+        assert result is None
+
+    def test_search_parent_finds_file_in_parent(self, tmp_path):
+        child = tmp_path / "sub"
+        child.mkdir()
+        (tmp_path / ".env").write_text("A=1\n")
+        result = find_env_file(child, search_parent=1)
+        assert result == tmp_path / ".env"
+
+    def test_search_parent_zero_does_not_search_up(self, tmp_path):
+        child = tmp_path / "sub"
+        child.mkdir()
+        (tmp_path / ".env").write_text("A=1\n")
+        result = find_env_file(child, search_parent=0)
+        assert result is None
+
+    def test_search_parent_finds_in_current_dir_first(self, tmp_path):
+        child = tmp_path / "sub"
+        child.mkdir()
+        (tmp_path / ".env").write_text("PARENT=1\n")
+        (child / ".env").write_text("CHILD=1\n")
+        result = find_env_file(child, search_parent=1)
+        assert result == child / ".env"
+
+
+class TestCreateEnvAdditional:
+    def test_raises_value_error_when_no_file_found(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(ValueError, match="No env file found"):
+            create_env()
+
+    def test_raises_value_error_with_explicit_missing_file(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(ValueError, match="No env file found"):
+            create_env(env_file="nonexistent.env")
+
+    def test_strict_mode_passes_through(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".env").write_text("KEY=${UNDEFINED_VAR}\n")
+        from runenv.parser import ParseMessage
+        result = create_env()
+        assert result["KEY"] == ""
+
+    def test_search_parent_resolves_file(self, tmp_path, monkeypatch):
+        child = tmp_path / "app"
+        child.mkdir()
+        (tmp_path / ".env").write_text("APP_PORT=9000\n")
+        monkeypatch.chdir(child)
+        result = create_env(search_parent=1)
+        assert result["APP_PORT"] == "9000"
+
+
+class TestLoadEnvAdditional:
+    @mock.patch.dict(os.environ, {}, clear=True)
+    def test_require_env_file_raises_when_not_found(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(ValueError, match="No env file found"):
+            load_env(require_env_file=True)
+
+    @mock.patch.dict(os.environ, {}, clear=True)
+    def test_missing_file_without_require_silently_returns(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        load_env()
+        assert "_RUNENV_WRAPPED" not in os.environ
+
+
+class TestLintEnv:
+    def test_returns_messages_list(self, tmp_path, monkeypatch):
+        (tmp_path / ".env").write_text("KEY=value\n")
+        monkeypatch.chdir(tmp_path)
+        messages = lint_env()
+        assert isinstance(messages, list)
+
+    def test_clean_file_returns_no_errors(self, tmp_path, monkeypatch):
+        (tmp_path / ".env").write_text("KEY=value\nOTHER=123\n")
+        monkeypatch.chdir(tmp_path)
+        messages = lint_env()
+        assert not any(m.level == "error" for m in messages)
+
+    def test_duplicate_key_returns_warning(self, tmp_path, monkeypatch):
+        (tmp_path / ".env").write_text("KEY=a\nKEY=b\n")
+        monkeypatch.chdir(tmp_path)
+        messages = lint_env()
+        assert any(m.level == "warning" and "duplicated" in m.message for m in messages)
+
+    def test_raises_when_no_file_found(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(ValueError, match="No env file found"):
+            lint_env()
+
+    def test_explicit_file_path(self, tmp_path):
+        env_file = tmp_path / "check.env"
+        env_file.write_text("A=1\nA=2\n")
+        messages = lint_env(env_file=str(env_file))
+        assert any("duplicated" in m.message for m in messages)
+
+    def test_strict_mode_warns_on_undefined_ref(self, tmp_path, monkeypatch):
+        (tmp_path / ".env").write_text("KEY=${TOTALLY_MISSING_VAR}\n")
+        monkeypatch.chdir(tmp_path)
+        messages = lint_env(strict=True)
+        assert any("undefined" in m.message for m in messages)
+
+    def test_non_strict_silent_on_undefined_ref(self, tmp_path, monkeypatch):
+        (tmp_path / ".env").write_text("KEY=${TOTALLY_MISSING_VAR}\n")
+        monkeypatch.chdir(tmp_path)
+        messages = lint_env(strict=False)
+        assert not any("undefined" in m.message for m in messages)
+
+    def test_prefix_filters_keys(self, tmp_path, monkeypatch):
+        (tmp_path / ".env").write_text("APP_KEY=a\nOTHER=b\n")
+        monkeypatch.chdir(tmp_path)
+        messages = lint_env(prefix="APP_")
+        info_msgs = [m for m in messages if "skip OTHER" in m.message]
+        assert len(info_msgs) == 1
+
+    def test_search_parent_finds_file(self, tmp_path, monkeypatch):
+        child = tmp_path / "sub"
+        child.mkdir()
+        (tmp_path / ".env").write_text("KEY=value\n")
+        monkeypatch.chdir(child)
+        messages = lint_env(search_parent=1)
+        assert isinstance(messages, list)
+
+    def test_message_has_line_number(self, tmp_path, monkeypatch):
+        (tmp_path / ".env").write_text("KEY=a\nKEY=b\n")
+        monkeypatch.chdir(tmp_path)
+        messages = lint_env()
+        dup = [m for m in messages if "duplicated" in m.message]
+        assert dup[0].line_number == 2
