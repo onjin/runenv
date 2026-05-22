@@ -31,6 +31,8 @@ Manage application settings with ease using `runenv`, a lightweight tool inspire
 - [Parsing Behaviour](#parsing-behaviour)
   - [Variable Expansion](#variable-expansion)
   - [Quoting and Escape Sequences](#quoting-and-escape-sequences)
+  - [Inline Comments](#inline-comments)
+  - [Including Other Files](#including-other-files)
   - [Required Variables](#required-variables)
 - [Sample `.env` File](#sample-env-file)
 - [Similar Tools](#similar-tools)
@@ -48,6 +50,7 @@ Manage application settings with ease using `runenv`, a lightweight tool inspire
 - ✏️ **Escape Sequences**: `\n`, `\t`, `\\`, `\"` in double-quoted values; `$$` for a literal `$`.
 - 📄 **Multi-line Values**: Triple-quoted heredoc syntax (`"""..."""` / `'''...'''`).
 - 🔒 **Required Variables**: `# @required VAR` declarations fail fast on missing config.
+- 📎 **File Includes**: `# @include path` merges another env file inline for layered config.
 - 🧩 **Framework-Friendly**: Works well with Django, Flask, FastAPI, and more.
 
 ---
@@ -236,6 +239,43 @@ $$HOME is literal too
 '''
 ```
 
+### Inline Comments
+
+Comments start with `#`. The rules depend on quoting:
+
+| Style | `#` treatment |
+|-------|---------------|
+| Unquoted `VAR=value # comment` | `#` ends the value; trailing spaces before `#` are stripped |
+| Double-quoted `VAR="value # hash"` | `#` inside quotes is a literal character |
+| Single-quoted `VAR='value # hash'` | `#` inside quotes is a literal character |
+
+```ini
+DEBUG=1         # this comment is stripped → value is "1"
+MSG=hello world # this too → value is "hello world"
+TAG="v1.0 # rc" # hash is part of the value → "v1.0 # rc"
+```
+
+To include a literal `#` in an unquoted value, quote the value instead.
+
+### Including Other Files
+
+Use `# @include path` to load another env file at that point in the current file. Paths are relative to the file containing the directive.
+
+```ini
+# @include .env.base
+# @include ../shared/secrets.env
+
+PORT=8080  # overrides anything in included files above
+```
+
+**Merge order:** variables are processed in the order they appear — included files are expanded inline at the directive's position. A variable defined *after* the `@include` line overrides a same-named variable from the included file; a variable defined *before* is overridden by the included file.
+
+**Error cases reported by `runenv lint`:**
+- Included file not found — `error`-level message, parsing continues
+- Circular include (A includes B includes A) — `error`-level message, the cycle is broken
+
+`# @required` directives inside included files are honoured.
+
 ### Required Variables
 
 Declare variables that must be present and non-empty with `# @required`:
@@ -258,6 +298,9 @@ If any declared variable is missing or empty after full expansion, `runenv lint`
 ## Sample `.env` File
 
 ```ini
+# Pull in shared base configuration
+# @include .env.base
+
 # Declare required variables — runenv fails fast if any are missing
 # @required DATABASE_URL, SECRET_KEY
 

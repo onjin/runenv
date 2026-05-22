@@ -948,3 +948,128 @@ class TestRequiredDirective:
         env_file.write_text("# just a comment\nFOO=bar\n")
         result = parse_env_file(env_file, ParseOptions())
         assert result == {"FOO": "bar"}
+
+
+class TestInlineComments:
+    def test_unquoted_inline_comment_stripped(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=value # comment\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "value"
+
+    def test_unquoted_value_truncated_at_hash(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=value with # hash in it\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "value with"
+
+    def test_double_quoted_hash_is_literal(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="value # not a comment"\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "value # not a comment"
+
+    def test_single_quoted_hash_is_literal(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY='value # not a comment'\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "value # not a comment"
+
+    def test_double_quoted_with_trailing_comment(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text('KEY="hello" # outer comment\n')
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "hello"
+
+    def test_unquoted_no_comment(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=plain_value\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "plain_value"
+
+    def test_unquoted_trailing_spaces_stripped(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("KEY=value   \n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["KEY"] == "value"
+
+
+class TestIncludeDirective:
+    def test_include_loads_base_vars(self, tmp_path):
+        base = tmp_path / "base.env"
+        base.write_text("BASE_URL=http://localhost\n")
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @include base.env\nPORT=8080\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["BASE_URL"] == "http://localhost"
+        assert result["PORT"] == "8080"
+
+    def test_include_current_file_overrides_base(self, tmp_path):
+        base = tmp_path / "base.env"
+        base.write_text("HOST=base-host\nPORT=3000\n")
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @include base.env\nHOST=override-host\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["HOST"] == "override-host"
+        assert result["PORT"] == "3000"
+
+    def test_include_base_overrides_earlier_vars(self, tmp_path):
+        base = tmp_path / "base.env"
+        base.write_text("HOST=base-host\n")
+        env_file = tmp_path / ".env"
+        env_file.write_text("HOST=early\n# @include base.env\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["HOST"] == "base-host"
+
+    def test_include_missing_file_emits_error(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @include nonexistent.env\nFOO=bar\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert len(errors) == 1
+        assert "not found" in errors[0].message
+
+    def test_include_missing_file_still_parses_rest(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @include nonexistent.env\nFOO=bar\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["FOO"] == "bar"
+
+    def test_circular_include_emits_error(self, tmp_path):
+        a = tmp_path / "a.env"
+        b = tmp_path / "b.env"
+        a.write_text("# @include b.env\nA=1\n")
+        b.write_text("# @include a.env\nB=2\n")
+        messages = lint_env_file(a, ParseOptions())
+        errors = [m for m in messages if m.level == "error" and "circular" in m.message]
+        assert len(errors) == 1
+
+    def test_self_include_emits_error(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @include .env\nFOO=bar\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error" and "circular" in m.message]
+        assert len(errors) == 1
+
+    def test_include_absolute_path(self, tmp_path):
+        base = tmp_path / "base.env"
+        base.write_text("BASE=yes\n")
+        env_file = tmp_path / ".env"
+        env_file.write_text(f"# @include {base}\nFOO=bar\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["BASE"] == "yes"
+
+    def test_include_with_required_directive_in_base(self, tmp_path):
+        base = tmp_path / "base.env"
+        base.write_text("# @required HOST\nHOST=localhost\n")
+        env_file = tmp_path / ".env"
+        env_file.write_text("# @include base.env\nPORT=8080\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result["HOST"] == "localhost"
+
+    def test_include_line_number_for_error(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("A=1\n# @include missing.env\nB=2\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        errors = [m for m in messages if m.level == "error"]
+        assert errors[0].line_number == 2

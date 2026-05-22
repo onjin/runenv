@@ -17,6 +17,7 @@ POSIX_NAME_REGEX = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 EXPORT_BARE_REGEX = re.compile(r'^\s*export\s+[\w.]+\s*$')
 TRIPLE_QUOTE_START_REGEX = re.compile(r'^\s*(?:export\s+)?([\w.]+)\s*=\s*("""|\'\'\')(.*)')
 REQUIRED_DIRECTIVE_REGEX = re.compile(r'^#\s*@required\s+(.+)$')
+INCLUDE_DIRECTIVE_REGEX = re.compile(r'^#\s*@include\s+(.+)$')
 
 _DOLLAR_PLACEHOLDER = "\x00"
 
@@ -235,7 +236,10 @@ class EnvParser:
             if colors[node] == WHITE:
                 dfs(node)
 
-    def load_env_file(self, env_file: Union[str, Path]) -> List[Tuple[int, str, str]]:
+    def load_env_file(self, env_file: Union[str, Path], _include_stack: Optional[frozenset] = None) -> List[Tuple[int, str, str]]:
+        current_file = str(Path(env_file).resolve())
+        stack: frozenset = (_include_stack or frozenset()) | {current_file}
+
         environ: List[Tuple[int, str, str]] = []
         with open(env_file) as f:
             all_lines = list(enumerate(f, start=1))
@@ -249,6 +253,27 @@ class EnvParser:
             if not line:
                 continue
             if line.startswith("#"):
+                inc_match = INCLUDE_DIRECTIVE_REGEX.match(line)
+                if inc_match:
+                    included_path = Path(inc_match.group(1).strip())
+                    if not included_path.is_absolute():
+                        included_path = Path(env_file).parent / included_path
+                    included_path = included_path.resolve()
+                    if str(included_path) in stack:
+                        self.messages.append(ParseMessage(
+                            line_number=line_number,
+                            level="error",
+                            message=f"circular include: '{included_path.name}'",
+                        ))
+                    elif not included_path.exists():
+                        self.messages.append(ParseMessage(
+                            line_number=line_number,
+                            level="error",
+                            message=f"included file not found: '{included_path}'",
+                        ))
+                    else:
+                        environ.extend(self.load_env_file(included_path, _include_stack=stack))
+                    continue
                 req_match = REQUIRED_DIRECTIVE_REGEX.match(line)
                 if req_match:
                     for name in (n.strip() for n in req_match.group(1).split(",")):
