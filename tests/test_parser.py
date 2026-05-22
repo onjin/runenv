@@ -1,3 +1,4 @@
+import sys
 import pytest
 
 from runenv.parser import (
@@ -1073,3 +1074,31 @@ class TestIncludeDirective:
         messages = lint_env_file(env_file, ParseOptions())
         errors = [m for m in messages if m.level == "error"]
         assert errors[0].line_number == 2
+
+
+class TestCoverageNegativeCases:
+    def test_blank_lines_in_env_file_are_skipped(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("A=1\n\nB=2\n\nC=3\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result == {"A": "1", "B": "2", "C": "3"}
+
+    def test_malformed_line_emits_line_not_matched_warning(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("VALID=ok\nNO_EQUALS_SIGN\nALSO_VALID=yes\n")
+        messages = lint_env_file(env_file, ParseOptions())
+        warnings = [m for m in messages if m.message == "line not matched"]
+        assert len(warnings) == 1
+        assert warnings[0].line_number == 2
+
+    def test_malformed_line_does_not_appear_in_result(self, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("VALID=ok\nNO_EQUALS_SIGN\n")
+        result = parse_env_file(env_file, ParseOptions())
+        assert result == {"VALID": "ok"}
+        assert "NO_EQUALS_SIGN" not in result
+
+    def test_yaml_line_numbers_returns_empty_when_yaml_unavailable(self, monkeypatch):
+        monkeypatch.setitem(sys.modules, "yaml", None)
+        result = _yaml_line_numbers("FOO: bar\n")
+        assert result == {}
